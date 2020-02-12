@@ -2,7 +2,7 @@
   <div class="chart-container">
     <el-row :gutter="20">
       <el-col :span="4" :offset="2">
-        <el-select v-model="ver" filterable placeholder="选择内核版本" @change="verchange">
+        <el-select v-model="ver" filterable placeholder="选择内核版本" @change="ver_change">
           <el-option
             v-for="item in ver_list"
             :key="item.value"
@@ -12,10 +12,30 @@
         </el-select>
       </el-col>
       <el-col :span="4">
-        <el-input v-model="path1" filterable placeholder="请输入路径" @change="pathchange"></el-input>
+        <el-select
+          v-model="path1"
+          filterable
+          remote
+          reserve-keyword
+          placeholder="请输入路径"
+          @change="path_change">
+          <el-option
+            v-for="item in path_list"
+            :key="item.value"
+            :label="item.value"
+            :value="item.value">
+          </el-option>
+        </el-select>
       </el-col>
       <el-col :span="4">
-        <el-input v-model="path2" filterable placeholder="请输入路径" @change="pathchange"></el-input>
+        <el-select v-model="path2" filterable placeholder="请输入路径" @change="path_change">
+          <el-option
+            v-for="item in path_list"
+            :key="item.value"
+            :label="item.value"
+            :value="item.value">
+          </el-option>
+        </el-select>
       </el-col>
       <el-col :span="9">
         <label class="radio-label">Layout:  </label>
@@ -30,7 +50,7 @@
         <!-- <el-button type="primary" round>生成调用图</el-button> -->
       </el-col>
     </el-row>
-    <graph height="100%" width="100%" v-if="showgraph()" :layout="layout" :ver="ver" :sou="sou" :tar="tar"/>
+    <graph height="100%" width="100%" v-if="show_graph()" :layout="layout" :ver="ver" :sou="sou" :tar="tar"/>
   </div>
 </template>
 
@@ -43,13 +63,14 @@ export default {
   components: { graph },
   data() {
     return {
-      url:'http://192.168.3.30:7001/api/v1/',
+      url: 'http://192.168.3.44:7001/api/v1/',
       ver: '',
       ver_list: [],
       path1: '',
       path2: '',
       sou: '',
       tar: '',
+      loading: false,
       show: false,
       path_list: [],
       layout: 'random',
@@ -57,55 +78,75 @@ export default {
     }
   },
   mounted() {
-    this.getverlist()
+    this.get_ver_list()
   },
-  methods:{
-    verchange(item){
-      this.getpathlist()
+  methods: {
+    ver_change(item) {
+      this.get_path_list()
     },
-    pathchange(item){
+
+    // remoteMethod(query) {
+    //   if (query !== '') {
+    //     this.loading = true
+    //     for (const item in this.path_all_list) {
+    //       item.value.index
+    //     }
+    //     this.loading = false
+    //   } else {
+    //     this.path_list = []
+    //   }
+    // },
+
+    path_change(item) {
       // console.log(item)
-      if(this.path1 !== ''){
+      if (this.path1 !== '') {
         this.sou = this.path1
       }
-      if(this.path2 !== ''){
+      if (this.path2 !== '') {
         this.tar = this.path2
       }
     },
 
-    showgraph(){
-      if(this.ver !== '' && this.sou !== '' && this.tar !== ''){
+    show_graph() {
+      if (this.ver !== '' && this.sou !== '' && this.tar !== '') {
         return true
-      }
-      else return false
+      } else return false
     },
 
-    getverlist(){
+    get_ver_list() {
       const _t = this
-      let url = _t.url + 'options'
-      axios.get(url,{
+      const url = _t.url + 'options'
+      axios.get(url, {
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
-      }).then(function(res){
-        console.log(res)
-      }).catch(function (error) {
+      }).then(function(res) {
+        console.log(res.data)
+        if (res.data.length > 0) {
+          _t.ver_list = res.data
+        }
+      }).catch(function(error) {
         console.log(error)
-      });
+      })
     },
-    
-    getpathlist(){
+
+    get_path_list() {
       const _t = this
-      let url = _t.url + 'options/' + _t.ver
-      axios.get(url,{
+      const url = _t.url + 'options/' + _t.ver
+      axios.get(url, {
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
-      }).then(function(res){
-        console.log(res)
-      }).catch(function (error) {
+      }).then(function(res) {
+        console.log(res.data)
+        if (res.data.length > 0) {
+          _t.path_list = res.data.map(item => {
+            return { value: item }
+          })
+        }
+      }).catch(function(error) {
         console.log(error)
-      });
+      })
     }
   }
 }

@@ -57,7 +57,7 @@ export default {
     sou() {
       this.getdata()
     },
-    tar(){
+    tar() {
       this.getdata()
     },
     layout(val) {
@@ -103,7 +103,7 @@ export default {
                 'color': '#545454',
                 'background-color': 'rgba(255, 255, 255, 0.9)',
                 'padding': '10px 8px',
-                'box-shadow': 'rgb(174, 174, 174) 0px 0px 10px',
+                'box-shadow': 'rgb(174, 174, 174) 0px 0px 10px'
               },
               formatText: function formatText(model) {
                 return model.id
@@ -205,16 +205,16 @@ export default {
     },
     getdata() {
       const _t = this
-      axios.get('http://192.168.31.254:7001/api/v1/graphs',{       // 还可以直接把参数拼接在url后边
-        params:{
+      axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
+        params: {
           version: _t.ver,
           source: _t.sou,
           target: _t.tar
         },
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
-      }).then(function(res){
+      }).then(function(res) {
         console.log(res.data)
         _t.data = res.data
         _t.data.nodes.map(function(node, i) {
@@ -231,9 +231,9 @@ export default {
           })
         })
         _t.graph.render()
-      }).catch(function (error) {
+      }).catch(function(error) {
         console.log(error)
-      });
+      })
       // _t.data.nodes.map(function(node, i) {
       //   node.label = node.id
       // })
