@@ -144,6 +144,7 @@ export default {
             return { value: item }
           })
         }
+        _t.path_list.unshift({ value: '/' })
       }).catch(function(error) {
         console.log(error)
       })

@@ -1,11 +1,13 @@
 <template>
-  <div id="mountNode" :class="className" :style="{height:height,width:width}" />
+  <div id="mountNode" class="graphchart" :style="{height:height,width:width}" />
 </template>
 
 <script>
 import G6 from '@antv/g6'
 import insertCss from 'insert-css'
 import axios from 'axios'
+// import Minimap from '@antv/g6/build/minimap'
+const Minimap = require('@antv/g6/build/minimap')
 
 insertCss(`
   .g6-tooltip {
@@ -20,10 +22,6 @@ insertCss(`
 
 export default {
   props: {
-    className: {
-      type: String,
-      default: 'graphchart'
-    },
     id: {
       type: String,
       default: 'chart'
@@ -68,6 +66,7 @@ export default {
   data() {
     return {
       graph: null,
+      minimap: null,
       data: {
         nodes: [],
         edges: []
@@ -83,13 +82,19 @@ export default {
       const _t = this
       // const el = _t.$el
       // const mountNode = el.querySelector('#mountNode')
+      _t.minimap = new Minimap({
+        size: [200, 100],
+        className: 'minimap',
+        type: 'keyShape'
+      })
       _t.graph = new G6.Graph({
         container: 'mountNode',
-        width: 1000,
-        height: 800,
+        width: 1200,
+        height: 600,
         fitView: true,
         autoPaint: true,
         animate: false,
+        plugins: [_t.minimap],
         modes: {
           default: ['drag-canvas',
             'zoom-canvas',
@@ -265,15 +270,11 @@ export default {
 }
 </script>
 
-<style scoped>
-  /* .g6-tooltip {
-    border: 1px solid #e2e2e2;
-    border-radius: 4px;
-    font-size: 8px;
-    color: #545454;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 10px 8px;
-    box-shadow: rgb(174, 174, 174) 0px 0px 10px;
-  } */
+<style>
+  .graphchart .minimap{
+    position: absolute;
+    left: 1000px;
+    top: 0px;
+  }
 </style>
 
