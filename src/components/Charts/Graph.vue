@@ -1,5 +1,33 @@
 <template>
-  <div id="mountNode" class="graphchart" :style="{height:height,width:width}" />
+  <div>
+    <ul id="contextMenu" :style="contextMenuStyle">
+      <li>Option 1</li>
+      <li>Option 2</li>
+    </ul>
+    <el-row :gutter="20">
+      <el-col :span="4" :offset="2">
+        <el-switch
+          v-model="sel_from_other"
+          inactive-text="from-other"
+          @change="select_edge()"
+        >
+        </el-switch>
+      </el-col>
+      <el-col :span="4">
+        <el-switch
+          v-model="sel_to_other"
+          inactive-text="to-other"
+          @change="select_edge()"
+        >
+        </el-switch>
+      </el-col>
+      <el-col :span="4">
+      </el-col>
+      <el-col :span="4">
+      </el-col>
+    </el-row>
+    <div id="mountNode" class="graphchart" :style="{height:height,width:width}" />
+  </div>
 </template>
 
 <script>
@@ -8,6 +36,8 @@ import insertCss from 'insert-css'
 import axios from 'axios'
 // import Minimap from '@antv/g6/build/minimap'
 const Minimap = require('@antv/g6/build/minimap')
+const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
+const strokes = ['#5B8FF9', '#5AD8A6', '#5D7092', '#F6BD16', '#E8684A', '#6DC8EC', '#9270CA', '#FF9D4D', '#269A99', '#FF99C3']
 
 insertCss(`
   .g6-tooltip {
@@ -18,7 +48,30 @@ insertCss(`
     background-color: rgba(255, 255, 255, 0.9);
     padding: 10px 8px;
     box-shadow: rgb(174, 174, 174) 0px 0px 10px;
+  }
+  #contextMenu {
+    position: absolute;
+    list-style-type: none;
+    padding: 10px 8px;
+    left: -150px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e2e2e2;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #545454;
+  }
+  #contextMenu li {
+    cursor: pointer;
+    list-style-type:none;
+    list-style: none;
+    margin-left: 0px;
+  }
+  #contextMenu li:hover {
+    color: #aaa;
   }`)
+
+// JSX and HTML templates are available for the menu
+// create ul
 
 export default {
   props: {
@@ -39,13 +92,16 @@ export default {
       default: 'random'
     },
     ver: {
-      type: String
+      type: String,
+      default: ''
     },
     sou: {
-      type: String
+      type: String,
+      default: ''
     },
     tar: {
-      type: String
+      type: String,
+      default: ''
     }
   },
   watch: {
@@ -70,7 +126,12 @@ export default {
       data: {
         nodes: [],
         edges: []
-      }
+      },
+      // sel_other: true,
+      // sel_other: true,
+      sel_from_other: true,
+      sel_to_other: true,
+      contextMenuStyle: {}
     }
   },
   mounted() {
@@ -101,15 +162,6 @@ export default {
             'drag-node',
             {
               type: 'tooltip',
-              style: {
-                'border': '1px solid #e2e2e2',
-                'border-radius': '4px',
-                'font-size': '8px',
-                'color': '#545454',
-                'background-color': 'rgba(255, 255, 255, 0.9)',
-                'padding': '10px 8px',
-                'box-shadow': 'rgb(174, 174, 174) 0px 0px 10px'
-              },
               formatText: function formatText(model) {
                 return model.id
               }
@@ -128,18 +180,18 @@ export default {
         },
         defaultNode: {
           shape: 'ellipse',
-          size: [20, 10],
+          size: [30, 15],
           color: 'steelblue',
           labelCfg: {
             style: {
-              fill: '#000',
-              fontSize: 10
+              fill: '#787878',
+              fontSize: 12
             }
           }
         },
         defaultEdge: {
           shape: 'quadratic',
-          size: 1
+          size: 2
         },
         nodeStateStyles: {
         // nodeStyle: {
@@ -157,17 +209,19 @@ export default {
         edgeStateStyles: {
         // edgeStyle: {
           default: {
-            stroke: '#e2e2e2',
-            lineAppendWidth: 2
+            opacity: 0.2,
+            // stroke: '#e2e2e2',
+            lineAppendWidth: 3
           },
           highlight: {
-            stroke: '#999'
+            // stroke: '#999'
+            opacity: 1
           }
         }
       })
       _t.graph.on('node:mouseenter', function(e) {
         var item = e.item
-        console.log(e)
+        // console.log(e)
         _t.graph.setAutoPaint(false)
         _t.graph.getNodes().forEach(function(node) {
           _t.graph.clearItemStates(node)
@@ -195,6 +249,17 @@ export default {
       })
       _t.graph.on('node:mouseleave', _t.clearAllStats)
       _t.graph.on('canvas:click', _t.clearAllStats)
+      _t.graph.on('node:contextmenu', evt => {
+        console.log(evt)
+        evt.preventDefault()
+        evt.stopPropagation()
+        _t.contextMenuStyle.left = `${(evt.x + 20)}px`
+        _t.contextMenuStyle.top = `${evt.y}px`
+      })
+
+      _t.graph.on('node:mouseleave', () => {
+        _t.contextMenuStyle.left = '-150px'
+      })
     },
     clearAllStats() {
       const _t = this
@@ -211,6 +276,7 @@ export default {
     getdata() {
       const _t = this
       axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
+      // axios.get('./public/data.json', {
         params: {
           version: _t.ver,
           source: _t.sou,
@@ -220,20 +286,30 @@ export default {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
-        console.log(res.data)
+        // console.log(res.data)
         _t.data = res.data
         _t.data.nodes.map(function(node, i) {
           node.label = node.id
+          if (!node.style) {
+            node.style = {}
+          }
+          node.style.fill = colors[node.type % colors.length]
+          node.style.stroke = strokes[node.type % strokes.length]
+        })
+        _t.data.edges.map(function(edge, i) {
+          edge.id = 'edge' + i
+          // edge.source = 'node' + edge.source
+          // edge.target = 'node' + edge.target
+          // console.log(edge)
+          if (!edge.style) {
+            edge.style = {}
+          }
+          // edge.style.fill = colors[node.type % colors.length]
+          edge.style.stroke = strokes[edge.type % strokes.length]
         })
         _t.graph.data({
           nodes: _t.data.nodes,
-          edges: _t.data.edges.map(function(edge, i) {
-            edge.id = 'edge' + i
-            // edge.source = 'node' + edge.source
-            // edge.target = 'node' + edge.target
-            // console.log(edge)
-            return Object.assign({}, edge)
-          })
+          edges: _t.data.edges
         })
         _t.graph.render()
       }).catch(function(error) {
@@ -255,6 +331,31 @@ export default {
       // })
       // _t.graph.render()
     },
+    select_edge() {
+      const _t = this
+      _t.graph.setAutoPaint(false)
+      _t.graph.getEdges().forEach(function(edge) {
+        // console.log(edge.getSource().getModel().type)
+        if (edge.getSource().getModel().type === 2) {
+          // console.log(edge)
+          if (_t.sel_from_other) {
+            _t.graph.showItem(edge)
+          } else {
+            // console.log('hide')
+            _t.graph.hideItem(edge)
+          }
+        }
+        if (edge.getTarget().getModel().type === 2) {
+          if (_t.sel_to_other) {
+            _t.graph.showItem(edge)
+          } else {
+            _t.graph.hideItem(edge)
+          }
+        }
+      })
+      _t.graph.paint()
+      _t.graph.setAutoPaint(true)
+    },
     ticked() {
       const _t = this
       _t.graph.refreshPositions()
@@ -263,7 +364,9 @@ export default {
     updateLayout() {
       const _t = this
       _t.graph.updateLayout({
-        type: _t.layout
+        type: _t.layout,
+        preventOverlap: true,
+        nodeSize: 50
       })
     }
   }
@@ -275,6 +378,26 @@ export default {
     position: absolute;
     left: 1000px;
     top: 0px;
+  }
+  #contextMenu {
+    position: absolute;
+    list-style-type: none;
+    padding: 10px 8px;
+    left: -150px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e2e2e2;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #545454;
+  }
+  #contextMenu li {
+    cursor: pointer;
+    list-style-type:none;
+    list-style: none;
+    margin-left: 0px;
+  }
+  #contextMenu li:hover {
+    color: #aaa;
   }
 </style>
 

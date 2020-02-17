@@ -74,7 +74,7 @@ export default {
       show: false,
       path_list: [],
       layout: 'random',
-      layout_options: ['random', 'fruchterman', 'mds', 'circular', 'concentric']
+      layout_options: ['random', 'fruchterman', 'circular', 'concentric', 'grid']
     }
   },
   mounted() {
