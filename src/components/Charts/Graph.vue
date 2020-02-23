@@ -22,8 +22,20 @@
         </el-switch>
       </el-col>
       <el-col :span="4">
+        <el-switch
+          v-model="sel_p_self"
+          inactive-text="from-other"
+          @change="select_edge()"
+        >
+        </el-switch>
       </el-col>
       <el-col :span="4">
+        <el-switch
+          v-model="sel_p_to_p"
+          inactive-text="from-other"
+          @change="select_edge()"
+        >
+        </el-switch>
       </el-col>
     </el-row>
     <div id="mountNode" class="graphchart" :style="{height:height,width:width}" />
@@ -44,7 +56,7 @@ insertCss(`
     border: 1px solid #e2e2e2;
     border-radius: 4px;
     font-size: 12px;
-    color: #545454;
+    color: #545454;/
     background-color: rgba(255, 255, 255, 0.9);
     padding: 10px 8px;
     box-shadow: rgb(174, 174, 174) 0px 0px 10px;
@@ -127,8 +139,8 @@ export default {
         nodes: [],
         edges: []
       },
-      // sel_other: true,
-      // sel_other: true,
+      sel_p_to_p: true,
+      sel_p_self: true,
       sel_from_other: true,
       sel_to_other: true,
       contextMenuStyle: {}
@@ -344,9 +356,20 @@ export default {
             // console.log('hide')
             _t.graph.hideItem(edge)
           }
-        }
-        if (edge.getTarget().getModel().type === 2) {
+        } else if (edge.getTarget().getModel().type === 2) {
           if (_t.sel_to_other) {
+            _t.graph.showItem(edge)
+          } else {
+            _t.graph.hideItem(edge)
+          }
+        } else if (edge.getTarget().getModel().type === edge.getSource().getModel().type) {
+          if (_t.sel_p_to_p) {
+            _t.graph.showItem(edge)
+          } else {
+            _t.graph.hideItem(edge)
+          }
+        } else {
+          if (_t.sel_p_self) {
             _t.graph.showItem(edge)
           } else {
             _t.graph.hideItem(edge)
