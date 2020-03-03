@@ -16,7 +16,7 @@ import router from './router'
 import './icons' // icon
 import './permission' // permission control
 import './utils/error-log' // error log
-
+import bus from './utils/bus'
 import * as filters from './filters' // global filters
 
 /**
@@ -42,6 +42,10 @@ Object.keys(filters).forEach(key => {
 })
 
 Vue.config.productionTip = false
+
+Vue.prototype.$EventBus = {
+  bus
+}
 
 new Vue({
   el: '#app',

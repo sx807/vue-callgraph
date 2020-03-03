@@ -1,14 +1,10 @@
 <template>
   <div>
-    <ul id="contextMenu" :style="contextMenuStyle">
-      <li>Option 1</li>
-      <li>Option 2</li>
-    </ul>
     <el-row :gutter="20">
       <el-col :span="4" :offset="2">
         <el-switch
           v-model="sel_from_other"
-          inactive-text="from-other"
+          active-text="from-other"
           @change="select_edge()"
         >
         </el-switch>
@@ -16,7 +12,7 @@
       <el-col :span="4">
         <el-switch
           v-model="sel_to_other"
-          inactive-text="to-other"
+          active-text="to-other"
           @change="select_edge()"
         >
         </el-switch>
@@ -24,7 +20,7 @@
       <el-col :span="4">
         <el-switch
           v-model="sel_p_self"
-          inactive-text="from-other"
+          active-text="path to self"
           @change="select_edge()"
         >
         </el-switch>
@@ -32,12 +28,13 @@
       <el-col :span="4">
         <el-switch
           v-model="sel_p_to_p"
-          inactive-text="from-other"
+          active-text="path to path"
           @change="select_edge()"
         >
         </el-switch>
       </el-col>
     </el-row>
+    <ContextMenu></ContextMenu>
     <div id="mountNode" class="graphchart" :style="{height:height,width:width}" />
   </div>
 </template>
@@ -46,7 +43,9 @@
 import G6 from '@antv/g6'
 import insertCss from 'insert-css'
 import axios from 'axios'
-// import Minimap from '@antv/g6/build/minimap'
+import ContextMenu from './ContextMenu'
+// import bus from '@/utils/bus'
+// import { mapGetters } from 'vuex'
 const Minimap = require('@antv/g6/build/minimap')
 const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
 const strokes = ['#5B8FF9', '#5AD8A6', '#5D7092', '#F6BD16', '#E8684A', '#6DC8EC', '#9270CA', '#FF9D4D', '#269A99', '#FF99C3']
@@ -56,36 +55,17 @@ insertCss(`
     border: 1px solid #e2e2e2;
     border-radius: 4px;
     font-size: 12px;
-    color: #545454;/
+    color: #545454;
     background-color: rgba(255, 255, 255, 0.9);
     padding: 10px 8px;
     box-shadow: rgb(174, 174, 174) 0px 0px 10px;
-  }
-  #contextMenu {
-    position: absolute;
-    list-style-type: none;
-    padding: 10px 8px;
-    left: -150px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid #e2e2e2;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #545454;
-  }
-  #contextMenu li {
-    cursor: pointer;
-    list-style-type:none;
-    list-style: none;
-    margin-left: 0px;
-  }
-  #contextMenu li:hover {
-    color: #aaa;
   }`)
 
-// JSX and HTML templates are available for the menu
-// create ul
-
 export default {
+  name: 'Graph',
+  components: {
+    ContextMenu
+  },
   props: {
     id: {
       type: String,
@@ -125,10 +105,6 @@ export default {
     },
     tar() {
       this.getdata()
-    },
-    layout(val) {
-      console.log(val)
-      this.updateLayout()
     }
   },
   data() {
@@ -145,6 +121,14 @@ export default {
       sel_to_other: true,
       contextMenuStyle: {}
     }
+  },
+  created() {
+    const _t = this
+    _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
+  },
+  destroyed() {
+    const _t = this
+    _t.$EventBus.bus.$off('graph/layout')
   },
   mounted() {
     this.initChart()
@@ -260,18 +244,22 @@ export default {
         _t.graph.setAutoPaint(true)
       })
       _t.graph.on('node:mouseleave', _t.clearAllStats)
-      _t.graph.on('canvas:click', _t.clearAllStats)
+      // _t.graph.on('canvas:click', _t.clearAllStats)
       _t.graph.on('node:contextmenu', evt => {
-        console.log(evt)
-        evt.preventDefault()
-        evt.stopPropagation()
-        _t.contextMenuStyle.left = `${(evt.x + 20)}px`
-        _t.contextMenuStyle.top = `${evt.y}px`
+        // console.log(evt)
+        this.$EventBus.bus.$emit('graph/contextmenu/open', evt)
       })
-
-      _t.graph.on('node:mouseleave', () => {
-        _t.contextMenuStyle.left = '-150px'
+      _t.graph.on('edge:contextmenu', evt => {
+        // console.log(evt)
+        this.$EventBus.bus.$emit('graph/contextmenu/open', evt)
       })
+      _t.graph.on('canvas:click', () => {
+        _t.clearAllStats()
+        this.$EventBus.bus.$emit('graph/contextmenu/close')
+      })
+      // _t.graph.on('node:mouseleave', () => {
+      //   _t.contextMenuStyle.left = '-150px'
+      // })
     },
     clearAllStats() {
       const _t = this
@@ -384,10 +372,11 @@ export default {
       _t.graph.refreshPositions()
       _t.graph.paint()
     },
-    updateLayout() {
+    updateLayout(layout) {
       const _t = this
+      console.log(_t.layout)
       _t.graph.updateLayout({
-        type: _t.layout,
+        type: layout,
         preventOverlap: true,
         nodeSize: 50
       })
@@ -401,26 +390,6 @@ export default {
     position: absolute;
     left: 1000px;
     top: 0px;
-  }
-  #contextMenu {
-    position: absolute;
-    list-style-type: none;
-    padding: 10px 8px;
-    left: -150px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid #e2e2e2;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #545454;
-  }
-  #contextMenu li {
-    cursor: pointer;
-    list-style-type:none;
-    list-style: none;
-    margin-left: 0px;
-  }
-  #contextMenu li:hover {
-    color: #aaa;
   }
 </style>
 

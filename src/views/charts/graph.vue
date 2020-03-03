@@ -39,7 +39,7 @@
       </el-col>
       <el-col :span="9">
         <label class="radio-label">Layout:  </label>
-        <el-select v-model="layout" style="width:120px;">
+        <el-select v-model="layout" style="width:120px;" @change="layout_change">
           <el-option
             v-for="item in layout_options"
             :key="item"
@@ -50,17 +50,19 @@
         <!-- <el-button type="primary" round>生成调用图</el-button> -->
       </el-col>
     </el-row>
-    <graph height="100%" width="100%" v-if="show_graph()" :layout="layout" :ver="ver" :sou="sou" :tar="tar"/>
+    <Graph height="100%" width="100%" v-if="show_graph()" :layout="layout" :ver="ver" :sou="sou" :tar="tar"/>
   </div>
 </template>
 
 <script>
-import graph from '@/components/Charts/Graph'
+import Graph from '@/components/Charts/Graph'
 import axios from 'axios'
+// import bus from '@/utils/bus'
+// import { mapGetters } from 'vuex'
 
 export default {
-  name: 'Graph',
-  components: { graph },
+  name: 'GraphChart',
+  components: { Graph },
   data() {
     return {
       url: 'http://192.168.3.44:7001/api/v1/',
@@ -96,7 +98,11 @@ export default {
     //     this.path_list = []
     //   }
     // },
-
+    layout_change() {
+      const _t = this
+      console.log(_t.layout)
+      this.$EventBus.bus.$emit('graph/layout', _t.layout)
+    },
     path_change(item) {
       // console.log(item)
       if (this.path1 !== '') {
