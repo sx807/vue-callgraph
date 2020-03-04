@@ -1,19 +1,18 @@
 <template>
   <div>
     <ul v-show="isShow" class="context-menu" :style="contextMenuStyle">
-      <li>Option 1</li>
-      <li>Option 2</li>
+      <li v-for="(item, index) in contextMenuList" :key="index" @click="doChick(item)">{{item.lable}}</li>
     </ul>
   </div>
 </template>
-
+C
 <script>
 export default {
   name: 'ContextMenu',
   data() {
     return {
       isShow: false,
-      activeMenu: '',
+      type: '',
       options: null,
       contextMenuList: [],
       contextMenuStyle: {}
@@ -30,6 +29,45 @@ export default {
     _t.$EventBus.bus.$off('graph/contextmenu/close')
   },
   methods: {
+    handleContextMenuList(type) {
+      const list_node = [
+        {
+          value: 'Code',
+          lable: '显示源码'
+        },
+        {
+          value: 'SetSou',
+          lable: '设为源路径'
+        },
+        {
+          value: 'SetTar',
+          lable: '设为目标路径'
+        },
+        {
+          value: 'GraphInside',
+          lable: '展开下一级'
+        }
+      ]
+      const list_edge = [
+        {
+          value: 'FunList',
+          lable: '显示函数列表'
+        },
+        {
+          value: 'Graph',
+          lable: '切换调用图'
+        },
+        {
+          value: 'GraphInside',
+          lable: '切换内部调用图'
+        }
+      ]
+      if (type === 'node') {
+        this.contextMenuList = list_node
+      } else {
+        this.contextMenuList = list_edge
+      }
+    },
     handleContextMenuStyle() {
       const _t = this
       const style = {}
@@ -41,11 +79,32 @@ export default {
       _t.contextMenuStyle = style
       // console.log(_t.contextMenuStyle)
     },
+    doChick(val) {
+      const _t = this
+      console.log(val)
+      const path = {}
+      const item = _t.options.item.getModel()
+      switch (val.value) {
+        case 'SetSou':
+          path.sou = item.id
+          break
+        case 'SetTar':
+          path.tar = item.id
+          break
+        case 'Graph':
+          path.sou = item.source
+          path.tar = item.target
+          break
+      }
+      if (path.disabled) console.log('{}')
+      if (Object.keys(path).length > 0) _t.$EventBus.bus.$emit('graph/path/change', path)
+      _t.doHide()
+    },
     doShow(data) {
       const _t = this
       _t.options = data
-      console.log(data.item.getType())
-      // _t.handleContextMenuList()
+      console.log(_t.options.item)
+      _t.handleContextMenuList(_t.options.item.getType())
       // 处理样式
       _t.handleContextMenuStyle()
       _t.isShow = true
@@ -76,6 +135,7 @@ export default {
     z-index: 999;
   }
   .context-menu li {
+    padding: 5px 10px;
     cursor: pointer;
     list-style-type:none;
     list-style: none;

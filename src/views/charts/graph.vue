@@ -17,8 +17,8 @@
           filterable
           remote
           reserve-keyword
-          placeholder="请输入路径"
-          @change="path_change">
+          placeholder="请输入源路径"
+          @change="path_change('sou')">
           <el-option
             v-for="item in path_list"
             :key="item.value"
@@ -28,7 +28,11 @@
         </el-select>
       </el-col>
       <el-col :span="4">
-        <el-select v-model="path2" filterable placeholder="请输入路径" @change="path_change">
+        <el-select
+          v-model="path2"
+          filterable
+          placeholder="请输入目标路径"
+          @change="path_change('tar')">
           <el-option
             v-for="item in path_list"
             :key="item.value"
@@ -79,6 +83,14 @@ export default {
       layout_options: ['random', 'circular', 'concentric', 'grid']
     }
   },
+  created() {
+    const _t = this
+    _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
+  },
+  destroyed() {
+    const _t = this
+    _t.$EventBus.bus.$off('graph/path/change')
+  },
   mounted() {
     this.get_ver_list()
   },
@@ -103,16 +115,37 @@ export default {
       console.log(_t.layout)
       this.$EventBus.bus.$emit('graph/layout', _t.layout)
     },
+    setPath(val) {
+      const _t = this
+      // console.log(val)
+      if (val.disable) {
+        return
+      }
+      if (val.sou) {
+        // console.log('sou')
+        this.path1 = val.sou
+      }
+      if (val.tar) {
+        // console.log('tar')
+        this.path2 = val.tar
+      }
+      _t.path_change('both')
+    },
     path_change(item) {
       // console.log(item)
-      if (this.path1 !== '') {
-        this.sou = this.path1
-      }
-      if (this.path2 !== '') {
-        this.tar = this.path2
+      switch (item) {
+        case 'sou':
+          this.sou = this.path1
+          break
+        case 'tar':
+          this.tar = this.path2
+          break
+        case 'both':
+          this.sou = this.path1
+          this.tar = this.path2
+          break
       }
     },
-
     show_graph() {
       if (this.ver !== '' && this.sou !== '' && this.tar !== '') {
         return true
