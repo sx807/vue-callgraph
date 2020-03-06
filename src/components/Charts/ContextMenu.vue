@@ -96,7 +96,7 @@ export default {
           path.tar = item.target
           break
       }
-      if (path.disabled) console.log('{}')
+      // if (path.disabled) console.log('{}')
       if (Object.keys(path).length > 0) _t.$EventBus.bus.$emit('graph/path/change', path)
       _t.doHide()
     },

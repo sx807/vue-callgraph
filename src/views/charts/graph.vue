@@ -31,6 +31,8 @@
         <el-select
           v-model="path2"
           filterable
+          remote
+          reserve-keyword
           placeholder="请输入目标路径"
           @change="path_change('tar')">
           <el-option

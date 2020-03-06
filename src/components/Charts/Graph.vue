@@ -35,7 +35,7 @@
       </el-col>
     </el-row>
     <ContextMenu></ContextMenu>
-    <div id="mountNode" class="graphchart" :style="{height:height,width:width}" />
+    <div v-loading="loading" id="mountNode" class="graphchart" :style="{height:height,width:width}" />
   </div>
 </template>
 
@@ -111,6 +111,7 @@ export default {
     return {
       graph: null,
       minimap: null,
+      loading: false,
       data: {
         nodes: [],
         edges: []
@@ -311,25 +312,12 @@ export default {
           nodes: _t.data.nodes,
           edges: _t.data.edges
         })
+        _t.select_edge()
+        _t.loading = false
         _t.graph.render()
       }).catch(function(error) {
         console.log(error)
       })
-      // _t.data.nodes.map(function(node, i) {
-      //   node.label = node.id
-      // })
-      // // $.getJSON('./test.json', function(data) {
-      // _t.graph.data({
-      //   nodes: _t.data.nodes,
-      //   edges: _t.data.edges.map(function(edge, i) {
-      //     edge.id = 'edge' + i
-      //     // edge.source = 'node' + edge.source
-      //     // edge.target = 'node' + edge.target
-      //     // console.log(edge)
-      //     return Object.assign({}, edge)
-      //   })
-      // })
-      // _t.graph.render()
     },
     select_edge() {
       const _t = this
@@ -366,11 +354,6 @@ export default {
       })
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
-    },
-    ticked() {
-      const _t = this
-      _t.graph.refreshPositions()
-      _t.graph.paint()
     },
     updateLayout(layout) {
       const _t = this
