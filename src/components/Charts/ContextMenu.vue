@@ -1,7 +1,7 @@
 <template>
   <div>
     <ul v-show="isShow" class="context-menu" :style="contextMenuStyle">
-      <li v-for="(item, index) in contextMenuList" :key="index" @click="doChick(item)">{{item.lable}}</li>
+      <li v-for="(item, index) in contextMenuList" :key="index" @click="doChick(item)">{{ item.lable }}</li>
     </ul>
   </div>
 </template>
@@ -44,7 +44,11 @@ export default {
           lable: '设为目标路径'
         },
         {
-          value: 'GraphInside',
+          value: 'Delete',
+          lavle: '删除节点'
+        },
+        {
+          value: 'Expand',
           lable: '展开下一级'
         }
       ]
@@ -58,7 +62,7 @@ export default {
           lable: '切换调用图'
         },
         {
-          value: 'GraphInside',
+          value: 'Inside',
           lable: '切换内部调用图'
         }
       ]
@@ -91,6 +95,15 @@ export default {
         case 'SetTar':
           path.tar = item.id
           break
+        case 'Delete':
+          _t.$EventBus.bus.$emit('graph/delete', _t.options.item)
+          break
+        case 'Expand':
+          _t.$EventBus.bus.$emit('graph/expand', _t.options.item)
+          break
+        case 'Inside':
+          _t.$EventBus.bus.$emit('graph/options', { per: false })
+        // eslint-disable-next-line no-fallthrough
         case 'Graph':
           path.sou = item.source
           path.tar = item.target
@@ -125,7 +138,6 @@ export default {
     min-width: 120px;
     list-style-type: none;
     width: auto !important;
-    z-index: 9999;
     background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #e2e2e2;
     border-radius: 4px;
@@ -137,7 +149,6 @@ export default {
   .context-menu li {
     padding: 5px 10px;
     cursor: pointer;
-    list-style-type:none;
     list-style: none;
     margin-left: 0px;
   }

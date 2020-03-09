@@ -6,36 +6,32 @@
           v-model="sel_from_other"
           active-text="from-other"
           @change="select_edge()"
-        >
-        </el-switch>
+        />
       </el-col>
       <el-col :span="4">
         <el-switch
           v-model="sel_to_other"
           active-text="to-other"
           @change="select_edge()"
-        >
-        </el-switch>
+        />
       </el-col>
       <el-col :span="4">
         <el-switch
           v-model="sel_p_self"
           active-text="path to self"
           @change="select_edge()"
-        >
-        </el-switch>
+        />
       </el-col>
       <el-col :span="4">
         <el-switch
           v-model="sel_p_to_p"
           active-text="path to path"
           @change="select_edge()"
-        >
-        </el-switch>
+        />
       </el-col>
     </el-row>
-    <ContextMenu></ContextMenu>
-    <div v-loading="loading" id="mountNode" class="graphchart" :style="{height:height,width:width}" />
+    <ContextMenu />
+    <div id="graphchart" class="graphchart" :style="{height:height,width:width}" />
   </div>
 </template>
 
@@ -43,6 +39,7 @@
 import G6 from '@antv/g6'
 import insertCss from 'insert-css'
 import axios from 'axios'
+import { Loading } from 'element-ui'
 import ContextMenu from './ContextMenu'
 // import bus from '@/utils/bus'
 // import { mapGetters } from 'vuex'
@@ -83,6 +80,16 @@ export default {
       type: String,
       default: 'random'
     },
+    config: {
+      type: Object,
+      default: function() {
+        return {
+          var: '',
+          sou: '',
+          tar: ''
+        }
+      }
+    },
     ver: {
       type: String,
       default: ''
@@ -97,14 +104,12 @@ export default {
     }
   },
   watch: {
-    ver() {
-      this.getdata()
-    },
-    sou() {
-      this.getdata()
-    },
-    tar() {
-      this.getdata()
+    config: {
+      handler(newValue, oldValue) {
+        console.log(newValue)
+        this.getdata()
+      },
+      deep: true
     }
   },
   data() {
@@ -112,9 +117,12 @@ export default {
       graph: null,
       minimap: null,
       loading: false,
+      graph_id: '',
+      options: {},
       data: {
         nodes: [],
-        edges: []
+        edges: [],
+        groups: []
       },
       sel_p_to_p: true,
       sel_p_self: true,
@@ -125,11 +133,17 @@ export default {
   },
   created() {
     const _t = this
+    _t.$EventBus.bus.$on('graph/delete', _t.delete_node)
+    _t.$EventBus.bus.$on('graph/expand', _t.expand_node)
     _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
+    _t.$EventBus.bus.$on('graph/options', _t.setoptions)
   },
   destroyed() {
     const _t = this
+    _t.$EventBus.bus.$off('graph/delete')
+    _t.$EventBus.bus.$off('graph/expand')
     _t.$EventBus.bus.$off('graph/layout')
+    _t.$EventBus.bus.$off('graph/option')
   },
   mounted() {
     this.initChart()
@@ -146,7 +160,7 @@ export default {
         type: 'keyShape'
       })
       _t.graph = new G6.Graph({
-        container: 'mountNode',
+        container: 'graphchart',
         width: 1200,
         height: 600,
         fitView: true,
@@ -154,8 +168,11 @@ export default {
         animate: false,
         plugins: [_t.minimap],
         modes: {
-          default: ['drag-canvas',
+          default: [
+            'drag-canvas',
             'zoom-canvas',
+            // 'drag-group',
+            // 'collapse-expand-group',
             'drag-node',
             {
               type: 'tooltip',
@@ -167,7 +184,7 @@ export default {
               type: 'edge-tooltip',
               formatText: function formatText(model, e) {
                 var edge = e.item
-                return '来源：' + edge.getSource().getModel().id + '<br/>去向：' + edge.getTarget().getModel().id
+                return '调用次数：' + edge.getModel().sourceWeight + '<br/>来源：' + edge.getSource().getModel().id + '<br/>去向：' + edge.getTarget().getModel().id
               }
             }
           ]
@@ -274,47 +291,64 @@ export default {
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
     },
+    setoptions(val) {
+      const keys = Object.keys(val)
+      for (const key of keys) {
+        this.options[key] = val[key]
+      }
+    },
     getdata() {
       const _t = this
+      const loadingInstance = Loading.service({ target: '#graphchart' })
+      const config = {
+        version: _t.config.ver,
+        source: _t.config.sou,
+        target: _t.config.tar
+      }
+      for (const key in _t.options) {
+        config[key] = _t.options[key]
+      }
       axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
       // axios.get('./public/data.json', {
-        params: {
-          version: _t.ver,
-          source: _t.sou,
-          target: _t.tar
-        },
+        params: config,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
         // console.log(res.data)
-        _t.data = res.data
-        _t.data.nodes.map(function(node, i) {
-          node.label = node.id
-          if (!node.style) {
-            node.style = {}
-          }
-          node.style.fill = colors[node.type % colors.length]
-          node.style.stroke = strokes[node.type % strokes.length]
-        })
-        _t.data.edges.map(function(edge, i) {
-          edge.id = 'edge' + i
-          // edge.source = 'node' + edge.source
-          // edge.target = 'node' + edge.target
-          // console.log(edge)
-          if (!edge.style) {
-            edge.style = {}
-          }
-          // edge.style.fill = colors[node.type % colors.length]
-          edge.style.stroke = strokes[edge.type % strokes.length]
-        })
-        _t.graph.data({
-          nodes: _t.data.nodes,
-          edges: _t.data.edges
-        })
-        _t.select_edge()
-        _t.loading = false
-        _t.graph.render()
+        if (res.data.nodes.length > 0) {
+          _t.graph_id = res.data.id
+          _t.data = res.data
+          _t.data.nodes.map(function(node) {
+            node.label = node.id
+            if (!node.style) {
+              node.style = {}
+            }
+            node.style.fill = colors[node.type % colors.length]
+            node.style.stroke = strokes[node.type % strokes.length]
+          })
+          _t.data.edges.map(function(edge, i) {
+            edge.id = 'edge' + i
+            // edge.source = 'node' + edge.source
+            // edge.target = 'node' + edge.target
+            // console.log(edge)
+            if (!edge.style) {
+              edge.style = {}
+            }
+            // edge.style.fill = colors[node.type % colors.length]
+            edge.style.stroke = strokes[edge.type % strokes.length]
+          })
+          _t.graph.data({
+            // groups: _t.data.groups,
+            nodes: _t.data.nodes,
+            edges: _t.data.edges
+          })
+          _t.select_edge()
+          _t.loading = false
+          _t.options = {}
+          _t.graph.render()
+          loadingInstance.close()
+        }
       }).catch(function(error) {
         console.log(error)
       })
@@ -355,6 +389,15 @@ export default {
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
     },
+    delete_node(node) {
+      const _t = this
+      _t.graph.removeItem(node)
+    },
+    expand_node(node) {
+      const _t = this
+      _t.graph.removeItem(node)
+      // console.log('node', _t.graph.getNodes(), 'edge', _t.graph.getEdges())
+    },
     updateLayout(layout) {
       const _t = this
       console.log(_t.layout)
@@ -372,7 +415,7 @@ export default {
   .graphchart .minimap{
     position: absolute;
     left: 1000px;
-    top: 0px;
+    top: 1px;
   }
 </style>
 

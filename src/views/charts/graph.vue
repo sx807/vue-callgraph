@@ -2,7 +2,7 @@
   <div class="chart-container">
     <el-row :gutter="20">
       <el-col :span="4" :offset="2">
-        <el-select v-model="ver" filterable placeholder="选择内核版本" @change="ver_change">
+        <el-select v-model="config.ver" filterable placeholder="选择内核版本" @change="ver_change">
           <el-option
             v-for="item in ver_list"
             :key="item.value"
@@ -56,7 +56,7 @@
         <!-- <el-button type="primary" round>生成调用图</el-button> -->
       </el-col>
     </el-row>
-    <Graph height="100%" width="100%" v-if="show_graph()" :layout="layout" :ver="ver" :sou="sou" :tar="tar"/>
+    <Graph height="100%" width="100%" v-if="show_graph()" :layout="layout" :config="config"/>
   </div>
 </template>
 
@@ -72,10 +72,15 @@ export default {
   data() {
     return {
       url: 'http://192.168.3.44:7001/api/v1/',
-      ver: '',
+      // ver: '',
       ver_list: [],
       path1: '',
       path2: '',
+      config: {
+        ver: '',
+        sou: '',
+        tar: ''
+      },
       sou: '',
       tar: '',
       loading: false,
@@ -135,21 +140,25 @@ export default {
     },
     path_change(item) {
       // console.log(item)
+      const tmp = this.config
       switch (item) {
         case 'sou':
-          this.sou = this.path1
+          tmp.sou = this.path1
           break
         case 'tar':
-          this.tar = this.path2
+          tmp.tar = this.path2
           break
         case 'both':
-          this.sou = this.path1
-          this.tar = this.path2
+          tmp.sou = this.path1
+          tmp.tar = this.path2
           break
       }
+      this.config = tmp
+      // console.log('pathchange', this.sou, this.tar)
+      // this.$EventBus.bus.$emit('graph/path')
     },
     show_graph() {
-      if (this.ver !== '' && this.sou !== '' && this.tar !== '') {
+      if (this.config.ver !== '' && this.config.sou !== '' && this.config.tar !== '') {
         return true
       } else return false
     },
@@ -173,7 +182,7 @@ export default {
 
     get_path_list() {
       const _t = this
-      const url = _t.url + 'options/' + _t.ver
+      const url = _t.url + 'options/' + _t.config.ver
       axios.get(url, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
