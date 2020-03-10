@@ -107,7 +107,7 @@ export default {
     config: {
       handler(newValue, oldValue) {
         console.log(newValue)
-        this.getdata()
+        this.getdata('new')
       },
       deep: true
     }
@@ -116,7 +116,6 @@ export default {
     return {
       graph: null,
       minimap: null,
-      loading: false,
       graph_id: '',
       options: {},
       data: {
@@ -136,7 +135,7 @@ export default {
     _t.$EventBus.bus.$on('graph/delete', _t.delete_node)
     _t.$EventBus.bus.$on('graph/expand', _t.expand_node)
     _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
-    _t.$EventBus.bus.$on('graph/options', _t.setoptions)
+    _t.$EventBus.bus.$on('graph/options', _t.setOptions)
   },
   destroyed() {
     const _t = this
@@ -147,7 +146,7 @@ export default {
   },
   mounted() {
     this.initChart()
-    this.getdata()
+    this.getdata('new')
   },
   methods: {
     initChart() {
@@ -291,13 +290,13 @@ export default {
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
     },
-    setoptions(val) {
+    setOptions(val) {
       const keys = Object.keys(val)
       for (const key of keys) {
         this.options[key] = val[key]
       }
     },
-    getdata() {
+    getdata(type) {
       const _t = this
       const loadingInstance = Loading.service({ target: '#graphchart' })
       const config = {
@@ -318,8 +317,8 @@ export default {
         // console.log(res.data)
         if (res.data.nodes.length > 0) {
           _t.graph_id = res.data.id
-          _t.data = res.data
-          _t.data.nodes.map(function(node) {
+          const tmp = res.data
+          tmp.nodes.map(function(node) {
             node.label = node.id
             if (!node.style) {
               node.style = {}
@@ -327,26 +326,29 @@ export default {
             node.style.fill = colors[node.type % colors.length]
             node.style.stroke = strokes[node.type % strokes.length]
           })
-          _t.data.edges.map(function(edge, i) {
-            edge.id = 'edge' + i
-            // edge.source = 'node' + edge.source
-            // edge.target = 'node' + edge.target
-            // console.log(edge)
+          tmp.edges.map(function(edge) {
             if (!edge.style) {
               edge.style = {}
             }
-            // edge.style.fill = colors[node.type % colors.length]
             edge.style.stroke = strokes[edge.type % strokes.length]
           })
+          if (type === 'new') {
+            _t.data = tmp
+          }
+          if (type === 'add') {
+            _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
+            _t.data.edges = _t.data.edges.concat(tmp.edges)
+            console.log(_t.data.nodes)
+          }
           _t.graph.data({
             // groups: _t.data.groups,
             nodes: _t.data.nodes,
             edges: _t.data.edges
           })
-          _t.select_edge()
-          _t.loading = false
+          // console.log(_t.graph.getNodes().length)
           _t.options = {}
           _t.graph.render()
+          _t.select_edge()
           loadingInstance.close()
         }
       }).catch(function(error) {
@@ -392,10 +394,26 @@ export default {
     delete_node(node) {
       const _t = this
       _t.graph.removeItem(node)
+      _t.clearAllStats()
     },
     expand_node(node) {
       const _t = this
-      _t.graph.removeItem(node)
+      const nodeId = node.getModel().id
+      const tmp = []
+      const index = _t.data.nodes.findIndex((node) => node.id === nodeId)
+      _t.data.nodes.splice(index, 1)
+      console.log(_t.data.nodes)
+      for (const edge of _t.data.edges) {
+        if (edge.source !== nodeId && edge.target !== nodeId) {
+          tmp.push(edge)
+        }
+      }
+      _t.data.edges = tmp
+      _t.setOptions({
+        id: _t.graph_id,
+        expand: nodeId
+      })
+      _t.getdata('add')
       // console.log('node', _t.graph.getNodes(), 'edge', _t.graph.getEdges())
     },
     updateLayout(layout) {

@@ -1,7 +1,7 @@
 <template>
   <div>
     <ul v-show="isShow" class="context-menu" :style="contextMenuStyle">
-      <li v-for="(item, index) in contextMenuList" :key="index" @click="doChick(item)">{{ item.lable }}</li>
+      <li v-for="(item, index) in contextMenuList" :key="index" @click="doChick(item)">{{ item.label }}</li>
     </ul>
   </div>
 </template>
@@ -33,37 +33,37 @@ export default {
       const list_node = [
         {
           value: 'Code',
-          lable: '显示源码'
+          label: '显示源码'
         },
         {
           value: 'SetSou',
-          lable: '设为源路径'
+          label: '设为源路径'
         },
         {
           value: 'SetTar',
-          lable: '设为目标路径'
-        },
-        {
-          value: 'Delete',
-          lavle: '删除节点'
+          label: '设为目标路径'
         },
         {
           value: 'Expand',
-          lable: '展开下一级'
+          label: '展开下一级'
+        },
+        {
+          value: 'Delete',
+          label: '删除节点'
         }
       ]
       const list_edge = [
         {
           value: 'FunList',
-          lable: '显示函数列表'
+          label: '显示函数列表'
         },
         {
           value: 'Graph',
-          lable: '切换调用图'
+          label: '切换调用图'
         },
         {
           value: 'Inside',
-          lable: '切换内部调用图'
+          label: '切换内部调用图'
         }
       ]
       if (type === 'node') {
