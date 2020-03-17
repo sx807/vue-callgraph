@@ -1,31 +1,38 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="4" :offset="2">
+      <el-col :span="3" :offset="1">
         <el-switch
           v-model="sel_from_other"
-          active-text="from-other"
+          active-text="other ->"
           @change="select_edge()"
         />
       </el-col>
-      <el-col :span="4">
+      <el-col :span="3">
         <el-switch
           v-model="sel_to_other"
-          active-text="to-other"
+          active-text="-> other"
           @change="select_edge()"
         />
       </el-col>
-      <el-col :span="4">
+      <el-col :span="3">
         <el-switch
           v-model="sel_p_self"
-          active-text="path to self"
+          active-text="path -> self"
           @change="select_edge()"
         />
       </el-col>
-      <el-col :span="4">
+      <el-col :span="3">
         <el-switch
-          v-model="sel_p_to_p"
-          active-text="path to path"
+          v-model="sel_s_to_t"
+          active-text="path1 -> path2"
+          @change="select_edge()"
+        />
+      </el-col>
+      <el-col :span="3">
+        <el-switch
+          v-model="sel_t_to_s"
+          active-text="path2 -> path1"
           @change="select_edge()"
         />
       </el-col>
@@ -123,7 +130,8 @@ export default {
         edges: [],
         groups: []
       },
-      sel_p_to_p: true,
+      sel_s_to_t: true,
+      sel_t_to_s: true,
       sel_p_self: true,
       sel_from_other: true,
       sel_to_other: true,
@@ -374,8 +382,16 @@ export default {
           } else {
             _t.graph.hideItem(edge)
           }
-        } else if (edge.getTarget().getModel().type === edge.getSource().getModel().type) {
-          if (_t.sel_p_to_p) {
+        } else if (edge.getSource().getModel().type === 0 &&
+                   edge.getTarget().getModel().type === 1) {
+          if (_t.sel_s_to_t) {
+            _t.graph.showItem(edge)
+          } else {
+            _t.graph.hideItem(edge)
+          }
+        } else if (edge.getSource().getModel().type === 1 &&
+          edge.getTarget().getModel().type === 0) {
+          if (_t.sel_t_to_s) {
             _t.graph.showItem(edge)
           } else {
             _t.graph.hideItem(edge)
