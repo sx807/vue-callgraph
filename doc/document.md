@@ -168,7 +168,7 @@ npm install --registry=https://registry.npm.taobao.org
 npm run dev
 ```
 
-浏览器访问 http://localhost:9527
+浏览器访问 <http://localhost:9527>
 
 ### 发布
 
@@ -189,241 +189,12 @@ npm run build:prod
 │  permission.js
 │  settings.js
 │
-├─api
-│      article.js
-│      qiniu.js
-│      remote-search.js
-│      role.js
-│      user.js
-│
-├─assets
-│  ├─401_images
-│  │      401.gif
-│  │
-│  ├─404_images
-│  │      404.png
-│  │      404_cloud.png
-│  │
-│  └─custom-theme
-│      │  index.css
-│      │
-│      └─fonts
-│              element-icons.ttf
-│              element-icons.woff
-│
 ├─components
-│  ├─BackToTop
-│  │      index.vue
-│  │
-│  ├─Breadcrumb
-│  │      index.vue
-│  │
-│  ├─Charts
-│  │  │  ContextMenu.vue
-│  │  │  demo.js
-│  │  │  FunList.vue
-│  │  │  Graph.vue
-│  │  │  Keyboard.vue
-│  │  │  LineMarker.vue
-│  │  │  MixChart.vue
-│  │  │
-│  │  └─mixins
-│  │          resize.js
-│  │
-│  ├─DndList
-│  │      index.vue
-│  │
-│  ├─DragSelect
-│  │      index.vue
-│  │
-│  ├─Dropzone
-│  │      index.vue
-│  │
-│  ├─ErrorLog
-│  │      index.vue
-│  │
-│  ├─GithubCorner
-│  │      index.vue
-│  │
-│  ├─Hamburger
-│  │      index.vue
-│  │
-│  ├─HeaderSearch
-│  │      index.vue
-│  │
-│  ├─ImageCropper
-│  │  │  index.vue
-│  │  │
-│  │  └─utils
-│  │          data2blob.js
-│  │          effectRipple.js
-│  │          language.js
-│  │          mimes.js
-│  │
-│  ├─JsonEditor
-│  │      index.vue
-│  │
-│  ├─Kanban
-│  │      index.vue
-│  │
-│  ├─MarkdownEditor
-│  │      default-options.js
-│  │      index.vue
-│  │
-│  ├─MDinput
-│  │      index.vue
-│  │
-│  ├─Pagination
-│  │      index.vue
-│  │
-│  ├─PanThumb
-│  │      index.vue
-│  │
-│  ├─RightPanel
-│  │      index.vue
-│  │
-│  ├─Screenfull
-│  │      index.vue
-│  │
-│  ├─Share
-│  │      DropdownMenu.vue
-│  │
-│  ├─SizeSelect
-│  │      index.vue
-│  │
-│  ├─Sticky
-│  │      index.vue
-│  │
-│  ├─SvgIcon
-│  │      index.vue
-│  │
-│  ├─TextHoverEffect
-│  │      Mallki.vue
-│  │
-│  ├─ThemePicker
-│  │      index.vue
-│  │
-│  ├─Tinymce
-│  │  │  dynamicLoadScript.js
-│  │  │  index.vue
-│  │  │  plugins.js
-│  │  │  toolbar.js
-│  │  │
-│  │  └─components
-│  │          EditorImage.vue
-│  │
-│  ├─Upload
-│  │      SingleImage.vue
-│  │      SingleImage2.vue
-│  │      SingleImage3.vue
-│  │
-│  └─UploadExcel
-│          index.vue
-│
-├─directive
-│  │  sticky.js
-│  │
-│  ├─clipboard
-│  │      clipboard.js
-│  │      index.js
-│  │
-│  ├─el-drag-dialog
-│  │      drag.js
-│  │      index.js
-│  │
-│  ├─el-table
-│  │      adaptive.js
-│  │      index.js
-│  │
-│  ├─permission
-│  │      index.js
-│  │      permission.js
-│  │
-│  └─waves
-│          index.js
-│          waves.css
-│          waves.js
-│
-├─filters
-│      index.js
-│
-├─icons
-│  │  index.js
-│  │  svgo.yml
-│  │
-│  └─svg
-│          404.svg
-│          bug.svg
-│          chart.svg
-│          clipboard.svg
-│          component.svg
-│          dashboard.svg
-│          documentation.svg
-│          drag.svg
-│          edit.svg
-│          education.svg
-│          email.svg
-│          example.svg
-│          excel.svg
-│          exit-fullscreen.svg
-│          eye-open.svg
-│          eye.svg
-│          form.svg
-│          fullscreen.svg
-│          guide.svg
-│          icon.svg
-│          international.svg
-│          language.svg
-│          link.svg
-│          list.svg
-│          lock.svg
-│          message.svg
-│          money.svg
-│          nested.svg
-│          password.svg
-│          pdf.svg
-│          people.svg
-│          peoples.svg
-│          qq.svg
-│          search.svg
-│          shopping.svg
-│          size.svg
-│          skill.svg
-│          star.svg
-│          tab.svg
-│          table.svg
-│          theme.svg
-│          tree-table.svg
-│          tree.svg
-│          user.svg
-│          wechat.svg
-│          zip.svg
-│
-├─layout
-│  │  index.vue
-│  │
-│  ├─components
-│  │  │  AppMain.vue
-│  │  │  index.js
-│  │  │  Navbar.vue
-│  │  │
-│  │  ├─Settings
-│  │  │      index.vue
-│  │  │
-│  │  ├─Sidebar
-│  │  │      FixiOSBug.js
-│  │  │      index.vue
-│  │  │      Item.vue
-│  │  │      Link.vue
-│  │  │      Logo.vue
-│  │  │      SidebarItem.vue
-│  │  │
-│  │  └─TagsView
-│  │          index.vue
-│  │          ScrollPane.vue
-│  │
-│  └─mixin
-│          ResizeHandler.js
+│  └─Charts
+│     │  ContextMenu.vue
+│     │  demo.js
+│     │  FunList.vue
+│     │  Graph.vue
 │
 ├─router
 │  │  index.js
@@ -434,228 +205,52 @@ npm run build:prod
 │          nested.js
 │          table.js
 │
-├─store
-│  │  getters.js
-│  │  index.js
-│  │
-│  └─modules
-│          app.js
-│          errorLog.js
-│          permission.js
-│          settings.js
-│          tagsView.js
-│          user.js
-│
-├─styles
-│      btn.scss
-│      element-ui.scss
-│      element-variables.scss
-│      index.scss
-│      mixin.scss
-│      sidebar.scss
-│      transition.scss
-│      variables.scss
-│
-├─utils
-│      auth.js
-│      bus.js
-│      clipboard.js
-│      error-log.js
-│      get-page-title.js
-│      index.js
-│      open-window.js
-│      permission.js
-│      request.js
-│      scroll-to.js
-│      validate.js
-│
-├─vendor
-│      Export2Excel.js
-│      Export2Zip.js
-│
 └─views
     ├─charts
-    │      graph.vue
-    │      keyboard.vue
-    │      line.vue
-    │      mix-chart.vue
-    │
-    ├─clipboard
-    │      index.vue
-    │
-    ├─components-demo
-    │      avatar-upload.vue
-    │      back-to-top.vue
-    │      count-to.vue
-    │      dnd-list.vue
-    │      drag-dialog.vue
-    │      drag-kanban.vue
-    │      drag-select.vue
-    │      dropzone.vue
-    │      json-editor.vue
-    │      markdown.vue
-    │      mixin.vue
-    │      split-pane.vue
-    │      sticky.vue
-    │      tinymce.vue
-    │
-    ├─dashboard
-    │  │  index.vue
-    │  │
-    │  ├─admin
-    │  │  │  index.vue
-    │  │  │
-    │  │  └─components
-    │  │      │  BarChart.vue
-    │  │      │  BoxCard.vue
-    │  │      │  LineChart.vue
-    │  │      │  PanelGroup.vue
-    │  │      │  PieChart.vue
-    │  │      │  RaddarChart.vue
-    │  │      │  TransactionTable.vue
-    │  │      │
-    │  │      ├─mixins
-    │  │      │      resize.js
-    │  │      │
-    │  │      └─TodoList
-    │  │              index.scss
-    │  │              index.vue
-    │  │              Todo.vue
-    │  │
-    │  └─editor
-    │          index.vue
-    │
-    ├─documentation
-    │      index.vue
-    │
-    ├─error-log
-    │  │  index.vue
-    │  │
-    │  └─components
-    │          ErrorTestA.vue
-    │          ErrorTestB.vue
-    │
-    ├─error-page
-    │      401.vue
-    │      404.vue
-    │
-    ├─example
-    │  │  create.vue
-    │  │  edit.vue
-    │  │  list.vue
-    │  │
-    │  └─components
-    │      │  ArticleDetail.vue
-    │      │  Warning.vue
-    │      │
-    │      └─Dropdown
-    │              Comment.vue
-    │              index.js
-    │              Platform.vue
-    │              SourceUrl.vue
-    │
-    ├─excel
-    │  │  export-excel.vue
-    │  │  merge-header.vue
-    │  │  select-excel.vue
-    │  │  upload-excel.vue
-    │  │
-    │  └─components
-    │          AutoWidthOption.vue
-    │          BookTypeOption.vue
-    │          FilenameOption.vue
-    │
-    ├─guide
-    │      index.vue
-    │      steps.js
-    │
-    ├─icons
-    │      element-icons.js
-    │      index.vue
-    │      svg-icons.js
-    │
-    ├─login
-    │  │  auth-redirect.vue
-    │  │  index.vue
-    │  │
-    │  └─components
-    │          SocialSignin.vue
-    │
-    ├─nested
-    │  ├─menu1
-    │  │  │  index.vue
-    │  │  │
-    │  │  ├─menu1-1
-    │  │  │      index.vue
-    │  │  │
-    │  │  ├─menu1-2
-    │  │  │  │  index.vue
-    │  │  │  │
-    │  │  │  ├─menu1-2-1
-    │  │  │  │      index.vue
-    │  │  │  │
-    │  │  │  └─menu1-2-2
-    │  │  │          index.vue
-    │  │  │
-    │  │  └─menu1-3
-    │  │          index.vue
-    │  │
-    │  └─menu2
-    │          index.vue
-    │
-    ├─pdf
-    │      content.js
-    │      download.vue
-    │      index.vue
-    │
-    ├─permission
-    │  │  directive.vue
-    │  │  page.vue
-    │  │  role.vue
-    │  │
-    │  └─components
-    │          SwitchRoles.vue
-    │
-    ├─profile
-    │  │  index.vue
-    │  │
-    │  └─components
-    │          Account.vue
-    │          Activity.vue
-    │          Timeline.vue
-    │          UserCard.vue
-    │
-    ├─qiniu
-    │      upload.vue
-    │
-    ├─redirect
-    │      index.vue
-    │
-    ├─tab
-    │  │  index.vue
-    │  │
-    │  └─components
-    │          TabPane.vue
-    │
-    ├─table
-    │  │  complex-table.vue
-    │  │  drag-table.vue
-    │  │  inline-edit-table.vue
-    │  │
-    │  └─dynamic-table
-    │      │  index.vue
-    │      │
-    │      └─components
-    │              FixedThead.vue
-    │              UnfixedThead.vue
-    │
-    ├─theme
-    │      index.vue
-    │
-    └─zip
-            index.vue
+         graph.vue
 ```
 
 ### Graph
 
 基于 Antv G6 实现的函数调用交互图，能够查看内核模块之间的关系。
+
+#### 页面文件结构
+
+/src/views/charts/graph.vue为页面文件，文件中包含选择路径版本等选择器组件、函数调用图、函数调用表组件。
+
+/components/Charts/Graph.vue
+
+```txt
+/src
+├─components
+│  └─Charts
+│     │  ContextMenu.vue
+│     │  FunList.vue
+│     └─ Graph.vue
+│
+└─views
+    └─charts
+       └─graph.vue
+```
+
+#### 页面实现功能
+
+##### 可搜索下菜单选择路径
+
+##### 函数调用图查看
+
+对于生成的函数调用图，查看效果实现有：
+
+1. 能够缩放
+2. 拖动整体
+3. 拖动节点
+4. 鼠标覆盖高亮当前节点及相连节点
+5. 详细信息气泡提示框显示
+6. 缩略图
+
+##### 筛选查看
+
+##### 右键菜单
+
+##### 动态加载部分更新数据
+

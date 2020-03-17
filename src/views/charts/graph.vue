@@ -56,19 +56,24 @@
         <!-- <el-button type="primary" round>生成调用图</el-button> -->
       </el-col>
     </el-row>
-    <Graph height="100%" width="100%" v-if="show_graph()" :layout="layout" :config="config"/>
+    <Graph v-if="show_graph()" :layout="layout" :config="config"/>
+    <FunList :config="config_funlist" v-show="funlist_show"/>
   </div>
 </template>
 
 <script>
 import Graph from '@/components/Charts/Graph'
+import FunList from '@/components/Charts/FunList'
 import axios from 'axios'
 // import bus from '@/utils/bus'
 // import { mapGetters } from 'vuex'
 
 export default {
   name: 'GraphChart',
-  components: { Graph },
+  components: {
+    Graph,
+    FunList
+  },
   data() {
     return {
       url: 'http://192.168.3.44:7001/api/v1/',
@@ -81,9 +86,14 @@ export default {
         sou: '',
         tar: ''
       },
+      config_funlist: {
+        ver: '',
+        sou: '',
+        tar: ''
+      },
+      funlist_show: false,
       sou: '',
       tar: '',
-      loading: false,
       show: false,
       path_list: [],
       layout: 'random',
@@ -93,10 +103,12 @@ export default {
   created() {
     const _t = this
     _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
+    _t.$EventBus.bus.$on('funlist/show', _t.show_funlist)
   },
   destroyed() {
     const _t = this
     _t.$EventBus.bus.$off('graph/path/change')
+    _t.$EventBus.bus.$off('funlist/show')
   },
   mounted() {
     this.get_ver_list()
@@ -163,6 +175,18 @@ export default {
       } else return false
     },
 
+    show_funlist(item) {
+      const _t = this
+      console.log('showlist', item)
+      _t.funlist_show = true
+      const tmp = {
+        ver: _t.config.ver,
+        sou: item.source,
+        tar: item.target
+      }
+      _t.config_funlist = tmp
+    },
+
     get_ver_list() {
       const _t = this
       const url = _t.url + 'options'
@@ -207,7 +231,6 @@ export default {
   .chart-container{
     position: relative;
     width: 100%;
-    height: calc(100vh - 84px);
   }
   .radio-label {
     font-size: 14px;

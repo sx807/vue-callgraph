@@ -101,6 +101,9 @@ export default {
         case 'Expand':
           _t.$EventBus.bus.$emit('graph/expand', _t.options.item)
           break
+        case 'FunList':
+          _t.$EventBus.bus.$emit('funlist/show', item)
+          break
         case 'Inside':
           _t.$EventBus.bus.$emit('graph/options', { per: false })
         // eslint-disable-next-line no-fallthrough
