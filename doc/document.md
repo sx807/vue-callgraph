@@ -74,18 +74,17 @@ controller.action：app.controllers.v1.graphs.index
 
 ```json
 params: {
-    version: "4-xx-xx"
-    source: "/xx"
+    version: "4-xx-xx",
+    source: "/xx",
     target: "/xx"
 }
-
 ```
 
 相应状态码：200
 
 返回数据格式：
 
-```json
+```js
 data：{
     Nodes:[],
     Edges:[]
