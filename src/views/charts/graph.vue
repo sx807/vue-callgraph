@@ -2,13 +2,13 @@
   <div class="chart-container">
     <el-row :gutter="20">
       <el-col :span="4" :offset="2">
-        <el-select v-model="config.ver" filterable placeholder="选择内核版本" @change="ver_change">
+        <el-select v-model="config_graph.ver" filterable placeholder="选择内核版本" @change="ver_change">
           <el-option
             v-for="item in ver_list"
             :key="item.value"
             :label="item.label"
-            :value="item.value">
-          </el-option>
+            :value="item.value"
+          />
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -18,13 +18,14 @@
           remote
           reserve-keyword
           placeholder="请输入源路径"
-          @change="path_change('sou')">
+          @change="path_change('sou')"
+        >
           <el-option
             v-for="item in path_list"
             :key="item.value"
             :label="item.value"
-            :value="item.value">
-          </el-option>
+            :value="item.value"
+          />
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -34,20 +35,21 @@
           remote
           reserve-keyword
           placeholder="请输入目标路径"
-          @change="path_change('tar')">
+          @change="path_change('tar')"
+        >
           <el-option
             v-for="item in path_list"
             :key="item.value"
             :label="item.value"
-            :value="item.value">
-          </el-option>
+            :value="item.value"
+          />
         </el-select>
       </el-col>
       <el-col :span="9">
         <label class="radio-label">Layout:  </label>
-        <el-select v-model="layout" style="width:120px;" @change="layout_change">
+        <el-select v-model="G_layout" style="width:120px;" @change="layout_change">
           <el-option
-            v-for="item in layout_options"
+            v-for="item in G_layout_options"
             :key="item"
             :label="item"
             :value="item"
@@ -56,14 +58,54 @@
         <!-- <el-button type="primary" round>生成调用图</el-button> -->
       </el-col>
     </el-row>
-    <Graph v-if="show_graph()" :layout="layout" :config="config"/>
-    <FunList :config="config_funlist" v-show="funlist_show"/>
+    <grid-layout
+      :layout.sync="web_layout"
+      :col-num="12"
+      :row-height="100"
+      :is-draggable="true"
+      :is-resizable="true"
+      :vertical-compact="true"
+      :margin="[10, 10]"
+      :use-css-transforms="true"
+    >
+      <grid-item
+        v-if="show_graph()"
+        :x="web_layout[0].x"
+        :y="web_layout[0].y"
+        :w="web_layout[0].w"
+        :min-w="6"
+        :max-w="12"
+        :h="web_layout[0].h"
+        :min-h="5"
+        :max-h="6"
+        :i="web_layout[0].i"
+        :is-draggable="false"
+        @resized="resizedGraphEvent"
+      >
+        <Graph :layout="G_layout" :config="config_graph"/>
+      </grid-item>
+      <grid-item
+        v-show="funlist_show"
+        :x="web_layout[1].x"
+        :y="web_layout[1].y"
+        :w="web_layout[1].w"
+        :min-w="3"
+        :max-w="12"
+        :h="web_layout[1].h"
+        :min-h="5"
+        :max-h="5"
+        :i="web_layout[1].i"
+      >
+        <FunList :config="config_funlist" />
+      </grid-item>
+    </grid-layout>
   </div>
 </template>
 
 <script>
 import Graph from '@/components/Charts/Graph'
 import FunList from '@/components/Charts/FunList'
+import VueGridLayout from 'vue-grid-layout'
 import axios from 'axios'
 // import bus from '@/utils/bus'
 // import { mapGetters } from 'vuex'
@@ -71,6 +113,8 @@ import axios from 'axios'
 export default {
   name: 'GraphChart',
   components: {
+    GridLayout: VueGridLayout.GridLayout,
+    GridItem: VueGridLayout.GridItem,
     Graph,
     FunList
   },
@@ -81,10 +125,12 @@ export default {
       ver_list: [],
       path1: '',
       path2: '',
-      config: {
+      config_graph: {
         ver: '',
         sou: '',
-        tar: ''
+        tar: '',
+        w: 1000,
+        h: 500
       },
       config_funlist: {
         ver: '',
@@ -96,19 +142,28 @@ export default {
       tar: '',
       show: false,
       path_list: [],
-      layout: 'random',
-      layout_options: ['random', 'circular', 'concentric', 'grid']
+      web_layout: [
+        { 'x': 0, 'y': 0, 'w': 12, 'h': 5, 'i': '0' },
+        { 'x': 0, 'y': 1, 'w': 12, 'h': 5, 'i': '1' }
+      ],
+      // resizeEvent: function(i, newH, newW, newHPx, newWPx) {
+      //   console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
+      // },
+      G_layout: 'random',
+      G_layout_options: ['random', 'circular', 'concentric', 'grid']
     }
   },
   created() {
     const _t = this
     _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
     _t.$EventBus.bus.$on('funlist/show', _t.show_funlist)
+    _t.$EventBus.bus.$on('code/show', _t.show_code)
   },
   destroyed() {
     const _t = this
     _t.$EventBus.bus.$off('graph/path/change')
     _t.$EventBus.bus.$off('funlist/show')
+    _t.$EventBus.bus.$off('code/show')
   },
   mounted() {
     this.get_ver_list()
@@ -152,7 +207,7 @@ export default {
     },
     path_change(item) {
       // console.log(item)
-      const tmp = this.config
+      const tmp = this.config_graph
       switch (item) {
         case 'sou':
           tmp.sou = this.path1
@@ -165,12 +220,12 @@ export default {
           tmp.tar = this.path2
           break
       }
-      this.config = tmp
+      this.config_graph = tmp
       // console.log('pathchange', this.sou, this.tar)
       // this.$EventBus.bus.$emit('graph/path')
     },
     show_graph() {
-      if (this.config.ver !== '' && this.config.sou !== '' && this.config.tar !== '') {
+      if (this.config_graph.ver !== '' && this.config_graph.sou !== '' && this.config_graph.tar !== '') {
         return true
       } else return false
     },
@@ -180,11 +235,29 @@ export default {
       console.log('showlist', item)
       _t.funlist_show = true
       const tmp = {
-        ver: _t.config.ver,
+        ver: _t.config_graph.ver,
         sou: item.source,
         tar: item.target
       }
       _t.config_funlist = tmp
+    },
+
+    show_code(path, line) {
+      const _t = this
+      console.log('showcode', path, line)
+      const ver = _t.ver_list[_t.ver_list.findIndex((item) => item.value === _t.config_graph.ver)]
+      // https://elixir.bootlin.com/linux/v4.18.15/source/include/linux/list.h#L627
+      let url = 'https://elixir.bootlin.com/linux/v' + ver.label
+      const point = path.indexOf('.')
+      if (point > 0 && point < path.length - 3) {
+        url += '/ident' + path.slice(path.lastIndexOf('/'))
+      } else if (line > 0) {
+        url += '/source' + path + '#L' + line.toString()
+      } else {
+        url += '/source' + path
+      }
+      // console.log(url)
+      window.open(url)
     },
 
     get_ver_list() {
@@ -206,7 +279,7 @@ export default {
 
     get_path_list() {
       const _t = this
-      const url = _t.url + 'options/' + _t.config.ver
+      const url = _t.url + 'options/' + _t.config_graph.ver
       axios.get(url, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
@@ -222,6 +295,16 @@ export default {
       }).catch(function(error) {
         console.log(error)
       })
+    },
+
+    // resizedTableEvent(i, newH, newW, newHPx, newWPx) {
+    //   // console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
+    //   this.config_funlist.h = Math.floor(newHPx)
+    // },
+    resizedGraphEvent(i, newH, newW, newHPx, newWPx) {
+      // console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
+      this.config_graph.h = Math.floor(newHPx - 40)
+      this.config_graph.w = Math.floor(newWPx)
     }
   }
 }

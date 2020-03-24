@@ -38,7 +38,7 @@
       </el-col>
     </el-row>
     <ContextMenu />
-    <div id="graphchart" class="graphchart" :style="{height:height,width:width}" />
+    <div id="graphChart" class="graphChart" style="height:100%; width:100%" ref="graphChart"/>
   </div>
 </template>
 
@@ -75,14 +75,6 @@ export default {
       type: String,
       default: 'chart'
     },
-    width: {
-      type: String,
-      default: '100%'
-    },
-    height: {
-      type: String,
-      default: '100%'
-    },
     layout: {
       type: String,
       default: 'random'
@@ -93,7 +85,9 @@ export default {
         return {
           var: '',
           sou: '',
-          tar: ''
+          tar: '',
+          w: 1000,
+          h: 500
         }
       }
     },
@@ -113,8 +107,22 @@ export default {
   watch: {
     config: {
       handler(newValue, oldValue) {
+        const _t = this
         console.log(newValue)
-        this.getdata('new')
+        if (newValue.h !== _t.graph_h || newValue.w !== _t.graph_w) {
+          _t.graph_h = newValue.h
+          _t.graph_w = newValue.w
+          // _t.graph.set('width', Number(newValue.w))
+          // _t.graph.set('height', Number(newValue.h))
+          _t.graph.destroy()
+          _t.initChart()
+          _t.graph.data(_t.data)
+          _t.graph.render()
+          // console.log('mounted', _t.$refs.graphChart.offsetWidth)
+          console.log(_t.graph.get('width'), _t.graph.get('height'))
+        } else {
+          this.getdata('new')
+        }
       },
       deep: true
     }
@@ -130,6 +138,8 @@ export default {
         edges: [],
         groups: []
       },
+      graph_w: 1000,
+      graph_h: 500,
       sel_s_to_t: true,
       sel_t_to_s: true,
       sel_p_self: true,
@@ -144,6 +154,9 @@ export default {
     _t.$EventBus.bus.$on('graph/expand', _t.expand_node)
     _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
     _t.$EventBus.bus.$on('graph/options', _t.setOptions)
+    // this.$nextTick(function() {
+    //   console.log('next', _t.$refs.graphChart.offsetWidth)
+    // })
   },
   destroyed() {
     const _t = this
@@ -153,8 +166,12 @@ export default {
     _t.$EventBus.bus.$off('graph/option')
   },
   mounted() {
-    this.initChart()
-    this.getdata('new')
+    const _t = this
+    console.log('mounted', _t.$refs.graphChart.offsetWidth)
+    _t.graph_w = _t.$refs.graphChart.offsetWidth
+    _t.initChart()
+    // console.log('mounted', _t.$refs.graphChart.offsetHeight, _t.$refs.graphChart.offsetWidth)
+    _t.getdata('new')
   },
   methods: {
     initChart() {
@@ -167,12 +184,14 @@ export default {
         type: 'keyShape'
       })
       _t.graph = new G6.Graph({
-        container: 'graphchart',
-        width: 1200,
-        height: 600,
+        container: 'graphChart',
+        width: _t.graph_w,
+        height: _t.graph_h,
         fitView: true,
         autoPaint: true,
         animate: false,
+        minZoom: 0.5,
+        maxZoom: 3,
         plugins: [_t.minimap],
         modes: {
           default: [
@@ -268,7 +287,24 @@ export default {
         _t.graph.paint()
         _t.graph.setAutoPaint(true)
       })
+      _t.graph.on('edge:mouseenter', function(e) {
+        var item = e.item
+        // console.log(e)
+        _t.graph.setAutoPaint(false)
+        _t.graph.getNodes().forEach(function(node) {
+          _t.graph.clearItemStates(node)
+          _t.graph.setItemState(node, 'dark', true)
+        })
+        _t.graph.setItemState(item, 'highlight', true)
+        _t.graph.setItemState(item.getTarget(), 'dark', false)
+        _t.graph.setItemState(item.getTarget(), 'highlight', true)
+        _t.graph.setItemState(item.getSource(), 'dark', false)
+        _t.graph.setItemState(item.getSource(), 'highlight', true)
+        _t.graph.paint()
+        _t.graph.setAutoPaint(true)
+      })
       _t.graph.on('node:mouseleave', _t.clearAllStats)
+      _t.graph.on('edge:mouseleave', _t.clearAllStats)
       // _t.graph.on('canvas:click', _t.clearAllStats)
       _t.graph.on('node:contextmenu', evt => {
         // console.log(evt)
@@ -282,9 +318,6 @@ export default {
         _t.clearAllStats()
         this.$EventBus.bus.$emit('graph/contextmenu/close')
       })
-      // _t.graph.on('node:mouseleave', () => {
-      //   _t.contextMenuStyle.left = '-150px'
-      // })
     },
     clearAllStats() {
       const _t = this
@@ -306,7 +339,7 @@ export default {
     },
     getdata(type) {
       const _t = this
-      const loadingInstance = Loading.service({ target: '#graphchart' })
+      const loadingInstance = Loading.service({ target: '#graphChart' })
       const config = {
         version: _t.config.ver,
         source: _t.config.sou,
@@ -357,8 +390,8 @@ export default {
           _t.options = {}
           _t.graph.render()
           _t.select_edge()
-          loadingInstance.close()
         }
+        loadingInstance.close()
       }).catch(function(error) {
         console.log(error)
       })
@@ -446,10 +479,10 @@ export default {
 </script>
 
 <style>
-  .graphchart .minimap{
+  .graphChart .minimap{
     position: absolute;
-    left: 1000px;
-    top: 1px;
+    left: 1px;
+    top: 2px;
   }
 </style>
 

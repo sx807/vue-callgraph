@@ -5,7 +5,6 @@
     </ul>
   </div>
 </template>
-C
 <script>
 export default {
   name: 'ContextMenu',
@@ -89,6 +88,9 @@ export default {
       const path = {}
       const item = _t.options.item.getModel()
       switch (val.value) {
+        case 'Code':
+          _t.$EventBus.bus.$emit('code/show', item.id, 0)
+          break
         case 'SetSou':
           path.sou = item.id
           break
@@ -119,7 +121,7 @@ export default {
     doShow(data) {
       const _t = this
       _t.options = data
-      console.log(_t.options.item)
+      console.log(_t.options)
       _t.handleContextMenuList(_t.options.item.getType())
       // 处理样式
       _t.handleContextMenuStyle()
@@ -147,7 +149,7 @@ export default {
     font-size: 12px;
     color: #545454;
     padding: 10px 8px;
-    z-index: 999;
+    z-index: 9999;
   }
   .context-menu li {
     padding: 5px 10px;

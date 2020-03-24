@@ -84,7 +84,7 @@ params: {
 
 返回数据格式：
 
-```js
+```javascript
 data：{
     Nodes:[],
     Edges:[]
@@ -108,7 +108,7 @@ data：{
 app/router.js
 路由文件中定义graph路由，根据 RESTful 风格规范，定义一下路由：
 
-```js
+```javascript
 router.resources('graphs', '/api/v1/graphs', controller.v1.graphs);
 ```
 
@@ -335,3 +335,157 @@ npm run build:prod
 \# | 源函数 | 所在文件 | 行号 | 调用次数 | 调用行号 | 被调函数 | 所在文件 | 行号
 -| - | - | - | - | - | - | - | -
 
+## 拖拽式页面布局
+
+基于Vue组件 jbaysolutions/vue-grid-layout 实现拖拽页面组件，进行自定义布局。
+
+使用在函数调用图页面，当前版本使用函数调用图和函数列表两个模块，能够对函数调用图进行尺寸调整（由于函数调用图模块内部需要相应鼠标拖拽，故当前版本删除拖拽函数调用图模块，但将其他可拖动模块放置在周围。），对函数调用列表进行拖拽和尺寸调整。
+
+### 安装组件
+
+在项目路径下，使用包管理程序进行安装，命令如下
+
+```shell
+# 使用 npm
+npm install vue-grid-layout --save
+
+# 使用 yarn
+yarn add vue-grid-layout
+```
+
+在要使用的页面模块中，引入安装好的布局模块
+
+```javascript
+    import VueGridLayout from 'vue-grid-layout';
+```
+
+加入到页面 Vue 组件
+
+```javascript
+   export default {
+       components: {
+           GridLayout: VueGridLayout.GridLayout,
+           GridItem: VueGridLayout.GridItem
+       },
+   // ... data, methods, mounted (), etc.
+   }
+```
+
+### 使用组件
+
+```html
+<grid-layout
+      :layout.sync="web_layout" // 布局配置数组
+      :col-num="12"             // 总布局的列数
+      :row-height="100"         // 每行的高度
+      :is-draggable="true"      // 布局是否支持拖拽
+      :is-resizable="true"      // 布vue局是否支持改变尺寸
+      :margin="[10, 10]"        // 定义栅格中的元素边距
+    >
+      <grid-item v-for="item in layout" // 布局子项目组件
+                   :x="item.x"          // 布局子项目组件配置数据
+                   :y="item.y"
+                   :w="item.w"
+                   :h="item.h"
+                   :i="item.i"
+                   :key="item.i">
+            {{item.i}}
+        </grid-item>
+    </grid-layout>
+```
+
+### 实现功能
+
+在函数调用图页面使用过程中，需要同时查看函数调用图，函数调用表等多个模块，为满足用户使用过程中对于页面布局的需求差异，实现自定义布局功能，具体如下：
+
+#### 函数调用图模块的调整尺寸
+
+函数调用图模块作为查看函数调用的主要组件，内部图模块需要相应鼠标拖拽事件对图进行改变，故取消模块对拖拽布局的功能，能够通过模块右下角一个 “ ┛ ” 型图标对模块进行尺寸改变。同时对布局模块内的函数调用图进行大小调整，调整过程会对内部图进行重新绘制。
+
+#### 函数调用表宽度调整和拖拽布局
+
+函数调用表模高度固定，对模块尺寸体现在宽度上，同样通过模块右下角 “ ┛ ” 型图标对模块进行尺寸改变。鼠标悬浮在调用表上时，显示为方向箭头，按住鼠标左键就可以将模块拖拽改变布局位置。
+
+### 设计实现
+
+当前页面内容为两个模块，默认布局为上下两部分，当前设计能够通过改变模块尺寸，拖拽模块等操作来实现左右或交换上下位置的布局改变。
+
+通过模块嵌套，将函数调用图和函数调用表模块作为布局模块的子项目，对其子项目进行不同的配置参数，用来实现子项目的不同功能，具体描述如下：
+
+#### 函数调用图子项目
+
+函数调用图子项目主要特点为：不响应拖拽，能够改变尺寸，在模块尺寸改变后，还需要对函数调用图画布尺寸进行修改。
+
+```html
+<grid-item
+        v-if="show_graph()"
+        :x="web_layout[0].x"
+        :y="web_layout[0].y"
+        :w="web_layout[0].w"
+        :min-w="6"
+        :max-w="12"
+        :h="web_layout[0].h"
+        :min-h="5"
+        :max-h="8"
+        :i="web_layout[0].i"
+        :is-draggable="false"
+        @resized="resizedGraphEvent"
+      >
+        <Graph :layout="G_layout" :config="config_graph"/>
+      </grid-item>
+```
+
+在模块标签配置中增加 :is-draggable="false" 属性，关闭拖拽相应，增加 @resized="resizedGraphEvent" 事件，当尺寸改变后会触发 resizedGraphEvent() 函数
+
+```javascript
+resizedGraphEvent(i, newH, newW, newHPx, newWPx) {
+      // console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
+      this.config_graph.h = Math.floor(newHPx - 40)
+      this.config_graph.w = Math.floor(newWPx)
+    }
+```
+
+resizedGraphEvent() 函数将模块尺寸改变后的宽、高数据，赋值给函数调用图模块输入的配置数据。
+
+在函数调用图模块中，会监控 config 中属性的变化，如果时宽、高属性发生了变化，会通过销毁当前画布，以新的画布尺寸进行重新绘图。
+
+```javascript
+watch: {
+    config: {
+      handler(newValue, oldValue) {
+        const _t = this
+        if (newValue.h !== _t.graph_h || newValue.w !== _t.graph_w) {
+          _t.graph_h = newValue.h
+          _t.graph_w = newValue.w
+          _t.graph.destroy()
+          _t.initChart()
+          _t.graph.data(_t.data)
+          _t.graph.render()
+        } else {
+          this.getdata('new')
+        }
+      },
+      deep: true
+    }
+```
+
+#### 函数调用表子项目
+
+函数调用表子项目能够拖拽，能够改变尺寸，因此配置属性中，只需要对其位置和大小限制进行配置，无需增加相应事件。
+
+```html
+<grid-item
+        v-show="funlist_show"
+        :x="web_layout[1].x"
+        :y="web_layout[1].y"
+        :w="web_layout[1].w"
+        :min-w="3"
+        :max-w="12"
+        :h="web_layout[1].h"
+        :min-h="5"
+        :max-h="5"
+        :i="web_layout[1].i"
+      >
+        <FunList :config="config_funlist" />
+      </grid-item>
+```
