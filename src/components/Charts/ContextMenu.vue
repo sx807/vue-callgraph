@@ -28,7 +28,14 @@ export default {
     _t.$EventBus.bus.$off('graph/contextmenu/close')
   },
   methods: {
-    handleContextMenuList(type) {
+    handleContextMenuList(item) {
+      let type = ''
+      console.log(item)
+      if (!item) {
+        type = 'canvas'
+      } else {
+        type = item.getType()
+      }
       const list_node = [
         {
           value: 'Code',
@@ -53,6 +60,10 @@ export default {
       ]
       const list_edge = [
         {
+          value: 'Back',
+          label: '后退'
+        },
+        {
           value: 'FunList',
           label: '显示函数列表'
         },
@@ -65,10 +76,22 @@ export default {
           label: '切换内部调用图'
         }
       ]
+      const list_canvas = [
+        {
+          value: 'Post',
+          label: '分享此图'
+        },
+        {
+          value: 'Back',
+          label: '后退'
+        }
+      ]
       if (type === 'node') {
         this.contextMenuList = list_node
-      } else {
+      } else if (type === 'edge') {
         this.contextMenuList = list_edge
+      } else {
+        this.contextMenuList = list_canvas
       }
     },
     handleContextMenuStyle() {
@@ -86,32 +109,38 @@ export default {
       const _t = this
       console.log(val)
       const path = {}
-      const item = _t.options.item.getModel()
+      const item = _t.options.item
       switch (val.value) {
         case 'Code':
-          _t.$EventBus.bus.$emit('code/show', item.id, 0)
+          _t.$EventBus.bus.$emit('code/show', item.getModel().id, 0)
           break
         case 'SetSou':
-          path.sou = item.id
+          path.sou = item.getModel().id
           break
         case 'SetTar':
-          path.tar = item.id
+          path.tar = item.getModel().id
           break
         case 'Delete':
-          _t.$EventBus.bus.$emit('graph/delete', _t.options.item)
+          _t.$EventBus.bus.$emit('graph/delete', item)
           break
         case 'Expand':
-          _t.$EventBus.bus.$emit('graph/expand', _t.options.item)
+          _t.$EventBus.bus.$emit('graph/expand', item)
           break
         case 'FunList':
-          _t.$EventBus.bus.$emit('funlist/show', item)
+          _t.$EventBus.bus.$emit('funlist/show', item.getModel())
           break
         case 'Inside':
           _t.$EventBus.bus.$emit('graph/options', { per: false })
         // eslint-disable-next-line no-fallthrough
         case 'Graph':
-          path.sou = item.source
-          path.tar = item.target
+          path.sou = item.getModel().source
+          path.tar = item.getModel().target
+          break
+        case 'Back':
+          _t.$EventBus.bus.$emit('graph/back', item)
+          break
+        case 'Post':
+          _t.$EventBus.bus.$emit('graph/post')
           break
       }
       // if (path.disabled) console.log('{}')
@@ -122,7 +151,7 @@ export default {
       const _t = this
       _t.options = data
       console.log(_t.options)
-      _t.handleContextMenuList(_t.options.item.getType())
+      _t.handleContextMenuList(_t.options.item)
       // 处理样式
       _t.handleContextMenuStyle()
       _t.isShow = true

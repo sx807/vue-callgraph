@@ -38,7 +38,7 @@
       </el-col>
     </el-row>
     <ContextMenu />
-    <div id="graphChart" class="graphChart" style="height:100%; width:100%" ref="graphChart"/>
+    <div id="graphChart" ref="graphChart" class="graphChart" style="height:100%; width:100%" />
   </div>
 </template>
 
@@ -48,6 +48,7 @@ import insertCss from 'insert-css'
 import axios from 'axios'
 import { Loading } from 'element-ui'
 import ContextMenu from './ContextMenu'
+import Cookies from 'js-cookie'
 // import bus from '@/utils/bus'
 // import { mapGetters } from 'vuex'
 const Minimap = require('@antv/g6/build/minimap')
@@ -90,41 +91,6 @@ export default {
           h: 500
         }
       }
-    },
-    ver: {
-      type: String,
-      default: ''
-    },
-    sou: {
-      type: String,
-      default: ''
-    },
-    tar: {
-      type: String,
-      default: ''
-    }
-  },
-  watch: {
-    config: {
-      handler(newValue, oldValue) {
-        const _t = this
-        console.log(newValue)
-        if (newValue.h !== _t.graph_h || newValue.w !== _t.graph_w) {
-          _t.graph_h = newValue.h
-          _t.graph_w = newValue.w
-          // _t.graph.set('width', Number(newValue.w))
-          // _t.graph.set('height', Number(newValue.h))
-          _t.graph.destroy()
-          _t.initChart()
-          _t.graph.data(_t.data)
-          _t.graph.render()
-          // console.log('mounted', _t.$refs.graphChart.offsetWidth)
-          console.log(_t.graph.get('width'), _t.graph.get('height'))
-        } else {
-          this.getdata('new')
-        }
-      },
-      deep: true
     }
   },
   data() {
@@ -133,6 +99,12 @@ export default {
       minimap: null,
       graph_id: '',
       options: {},
+      backup_data: {
+        id: '',
+        layout: '',
+        data: {},
+        config: {}
+      },
       data: {
         nodes: [],
         edges: [],
@@ -148,12 +120,44 @@ export default {
       contextMenuStyle: {}
     }
   },
+  watch: {
+    config: {
+      handler(newValue, oldValue) {
+        const _t = this
+        console.log(newValue, oldValue)
+        if (newValue.h !== _t.graph_h || newValue.w !== _t.graph_w) {
+          _t.graph_h = newValue.h
+          _t.graph_w = newValue.w
+          // _t.graph.set('width', Number(newValue.w))
+          // _t.graph.set('height', Number(newValue.h))
+          _t.graph.changeSize(_t.graph_w, _t.graph_h)
+          _t.graph.fitView(10)
+          // _t.graph.destroy()
+          // _t.initChart()
+          // _t.graph.data(_t.data)
+          // _t.graph.render()
+          // console.log('mounted', _t.$refs.graphChart.offsetWidth)
+          console.log(_t.graph.get('width'), _t.graph.get('height'))
+        } else {
+          _t.backup()
+          _t.getdata('new')
+        }
+        _t.graph_config = newValue
+      },
+      deep: true
+    },
+    layout(val) {
+      this.updateLayout(val)
+    }
+  },
   created() {
     const _t = this
     _t.$EventBus.bus.$on('graph/delete', _t.delete_node)
     _t.$EventBus.bus.$on('graph/expand', _t.expand_node)
     _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
     _t.$EventBus.bus.$on('graph/options', _t.setOptions)
+    _t.$EventBus.bus.$on('graph/back', _t.back_graph)
+    _t.$EventBus.bus.$on('graph/post', _t.save_graph)
     // this.$nextTick(function() {
     //   console.log('next', _t.$refs.graphChart.offsetWidth)
     // })
@@ -164,11 +168,14 @@ export default {
     _t.$EventBus.bus.$off('graph/expand')
     _t.$EventBus.bus.$off('graph/layout')
     _t.$EventBus.bus.$off('graph/option')
+    _t.$EventBus.bus.$off('graph/back')
+    _t.$EventBus.bus.$off('graph/post')
   },
   mounted() {
     const _t = this
-    console.log('mounted', _t.$refs.graphChart.offsetWidth)
-    _t.graph_w = _t.$refs.graphChart.offsetWidth
+    // console.log('mounted', _t.$refs.graphChart.offsetWidth)
+    // _t.graph_w = _t.$refs.graphChart.offsetWidth
+    _t.graph_config = _t.config
     _t.initChart()
     // console.log('mounted', _t.$refs.graphChart.offsetHeight, _t.$refs.graphChart.offsetWidth)
     _t.getdata('new')
@@ -185,6 +192,7 @@ export default {
       })
       _t.graph = new G6.Graph({
         container: 'graphChart',
+        graph_config: {},
         width: _t.graph_w,
         height: _t.graph_h,
         fitView: true,
@@ -307,10 +315,14 @@ export default {
       _t.graph.on('edge:mouseleave', _t.clearAllStats)
       // _t.graph.on('canvas:click', _t.clearAllStats)
       _t.graph.on('node:contextmenu', evt => {
-        // console.log(evt)
+        console.log(evt.item.getBBox())
         this.$EventBus.bus.$emit('graph/contextmenu/open', evt)
       })
       _t.graph.on('edge:contextmenu', evt => {
+        // console.log(evt)
+        this.$EventBus.bus.$emit('graph/contextmenu/open', evt)
+      })
+      _t.graph.on('canvas:contextmenu', evt => {
         // console.log(evt)
         this.$EventBus.bus.$emit('graph/contextmenu/open', evt)
       })
@@ -348,6 +360,7 @@ export default {
       for (const key in _t.options) {
         config[key] = _t.options[key]
       }
+      // axios.defaults.withCredentials = true
       axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
       // axios.get('./public/data.json', {
         params: config,
@@ -356,6 +369,7 @@ export default {
         }
       }).then(function(res) {
         // console.log(res.data)
+        // console.log('get', Cookies.get('csrfToken'))
         if (res.data.nodes.length > 0) {
           _t.graph_id = res.data.id
           const tmp = res.data
@@ -440,6 +454,103 @@ export default {
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
     },
+    backup() {
+      const _t = this
+      _t.backup_data.id = _t.graph_id
+      _t.backup_data.layout = _t.layout
+      _t.backup_data.config = _t.graph_config
+      _t.backup_data.data = _t.graph.save()
+      // console.log(_t.backup_data.data)
+    },
+    back_graph(item) {
+      const _t = this
+      if (Object.keys(_t.backup_data.data).length > 0) {
+        _t.graph.setAutoPaint(false)
+        // _t.graph.clear()
+        _t.graph.changeData({
+          // groups: _t.data.groups,
+          nodes: _t.backup_data.data.nodes,
+          edges: _t.backup_data.data.edges
+        })
+        const nodes = _t.backup_data.data.nodes
+        for (const node of nodes) {
+          // console.log(node)
+          // _t.graph.add('node', node)
+          const item = _t.graph.findById(node.id)
+          _t.graph.updateItem(item, node)
+        }
+        // _t.graph.refresh()
+        // _t.select_edge()
+        _t.clearAllStats()
+        _t.graph.paint()
+        _t.graph.setAutoPaint(true)
+      }
+    },
+    save_graph() {
+      const _t = this
+      // console.log(Cookies.get('csrfToken'))
+      // const loadingInstance = Loading.service({ target: '#graphChart' })
+      const config = {
+        version: _t.config.ver,
+        source: _t.config.sou,
+        target: _t.config.tar
+      }
+      // axios.defaults.withCredentials = true
+      // axios.defaults.xsrfCookieName = 'csrfToken' // default: XSRF-TOKEN
+      // axios.defaults.xsrfHeaderName = 'x-csrf-token' // default: X-XSRF-TOKEN
+      console.log(document.cookie)
+      axios.post('http://192.168.3.44:7001/api/v1/graphs', {
+        // axios.get('./public/data.json', {
+        config: config,
+        data: _t.graph.save()
+      }, {
+        headers: {
+          // 'x-csrf-token': Cookies.get('csrfToken'),
+          'Content-Type': 'application/json;charset=utf-8'
+          // 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+        }
+      }).then(function(res) {
+        console.log(res.data)
+        // if (res.data.nodes.length > 0) {
+        //   _t.graph_id = res.data.id
+        //   const tmp = res.data
+        //   tmp.nodes.map(function(node) {
+        //     node.label = node.id
+        //     if (!node.style) {
+        //       node.style = {}
+        //     }
+        //     node.style.fill = colors[node.type % colors.length]
+        //     node.style.stroke = strokes[node.type % strokes.length]
+        //   })
+        //   tmp.edges.map(function(edge) {
+        //     if (!edge.style) {
+        //       edge.style = {}
+        //     }
+        //     edge.style.stroke = strokes[edge.type % strokes.length]
+        //   })
+        //   if (type === 'new') {
+        //     _t.data = tmp
+        //   }
+        //   if (type === 'add') {
+        //     _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
+        //     _t.data.edges = _t.data.edges.concat(tmp.edges)
+        //     console.log(_t.data.nodes)
+        //   }
+        //   _t.graph.data({
+        //     // groups: _t.data.groups,
+        //     nodes: _t.data.nodes,
+        //     edges: _t.data.edges
+        //   })
+        //   // console.log(_t.graph.getNodes().length)
+        //   _t.options = {}
+        //   _t.graph.render()
+        //   _t.select_edge()
+        // }
+        // loadingInstance.close()
+      }).catch(function(error) {
+        console.log(error)
+      })
+    },
     delete_node(node) {
       const _t = this
       _t.graph.removeItem(node)
@@ -471,7 +582,8 @@ export default {
       _t.graph.updateLayout({
         type: layout,
         preventOverlap: true,
-        nodeSize: 50
+        nodeSize: 100,
+        linkDistance: 100
       })
     }
   }

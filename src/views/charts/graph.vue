@@ -82,6 +82,7 @@
         :is-draggable="false"
         @resized="resizedGraphEvent"
       >
+        <i class="el-icon-delete"></i>
         <Graph :layout="G_layout" :config="config_graph"/>
       </grid-item>
       <grid-item
@@ -150,7 +151,7 @@ export default {
       //   console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
       // },
       G_layout: 'random',
-      G_layout_options: ['random', 'circular', 'concentric', 'grid']
+      G_layout_options: ['random', 'force', 'circular', 'concentric', 'grid']
     }
   },
   created() {
@@ -186,8 +187,8 @@ export default {
     // },
     layout_change() {
       const _t = this
-      console.log(_t.layout)
-      this.$EventBus.bus.$emit('graph/layout', _t.layout)
+      console.log(_t.G_layout)
+      // this.$EventBus.bus.$emit('graph/layout', _t.layout)
     },
     setPath(val) {
       const _t = this
