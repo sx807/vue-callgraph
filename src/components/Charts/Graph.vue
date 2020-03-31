@@ -39,6 +39,17 @@
     </el-row>
     <ContextMenu />
     <div id="graphChart" ref="graphChart" class="graphChart" style="height:100%; width:100%" />
+    <el-dialog
+      title="分享链接"
+      :modal=false
+      :visible.sync="share_dialog"
+      :before-close="handleClose">
+      <span>{{share_url}}</span>
+      <span slot="footer" class="dialog-footer">
+<!--        <el-button @click="share_dialog = false">取 消</el-button>-->
+        <el-button type="primary" @click="share_dialog = false">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -47,8 +58,8 @@ import G6 from '@antv/g6'
 import insertCss from 'insert-css'
 import axios from 'axios'
 import { Loading } from 'element-ui'
+// import Clipboard from 'clipboard'
 import ContextMenu from './ContextMenu'
-import Cookies from 'js-cookie'
 // import bus from '@/utils/bus'
 // import { mapGetters } from 'vuex'
 const Minimap = require('@antv/g6/build/minimap')
@@ -91,6 +102,12 @@ export default {
           h: 500
         }
       }
+    },
+    ex_data: {
+      type: Object,
+      default: function() {
+        return {}
+      }
     }
   },
   data() {
@@ -117,14 +134,16 @@ export default {
       sel_p_self: true,
       sel_from_other: true,
       sel_to_other: true,
-      contextMenuStyle: {}
+      contextMenuStyle: {},
+      share_dialog: false,
+      share_url: ''
     }
   },
   watch: {
     config: {
       handler(newValue, oldValue) {
         const _t = this
-        console.log(newValue, oldValue)
+        console.log('watch config', newValue)
         if (newValue.h !== _t.graph_h || newValue.w !== _t.graph_w) {
           _t.graph_h = newValue.h
           _t.graph_w = newValue.w
@@ -140,7 +159,7 @@ export default {
           console.log(_t.graph.get('width'), _t.graph.get('height'))
         } else {
           _t.backup()
-          _t.getdata('new')
+          _t.get_data('new')
         }
         _t.graph_config = newValue
       },
@@ -177,8 +196,13 @@ export default {
     // _t.graph_w = _t.$refs.graphChart.offsetWidth
     _t.graph_config = _t.config
     _t.initChart()
+    // console.log('mounted', _t.config, _t.ex_data)
     // console.log('mounted', _t.$refs.graphChart.offsetHeight, _t.$refs.graphChart.offsetWidth)
-    _t.getdata('new')
+    if (_t.config.ex) {
+      _t.get_data('external')
+    } else {
+      _t.get_data('new')
+    }
   },
   methods: {
     initChart() {
@@ -349,7 +373,7 @@ export default {
         this.options[key] = val[key]
       }
     },
-    getdata(type) {
+    get_data(type) {
       const _t = this
       const loadingInstance = Loading.service({ target: '#graphChart' })
       const config = {
@@ -360,55 +384,82 @@ export default {
       for (const key in _t.options) {
         config[key] = _t.options[key]
       }
-      // axios.defaults.withCredentials = true
-      axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
-      // axios.get('./public/data.json', {
-        params: config,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+      if (type === 'external') {
+        const tmp = _t.handle_data(_t.ex_data)
+        _t.data = JSON.parse(JSON.stringify(tmp))
+        _t.graph.setAutoPaint(false)
+        _t.graph.changeData({
+          // groups: _t.data.groups,
+          nodes: _t.data.nodes,
+          edges: _t.data.edges
+        })
+        for (const node of tmp.nodes) {
+          // console.log(node)
+          // _t.graph.add('node', node)
+          // _t.graph.findById(node.id).updatePosition({ x: node.x, y: node.y })
+          _t.graph.updateItem(node.id, { x: node.x, y: node.y })
         }
-      }).then(function(res) {
-        // console.log(res.data)
-        // console.log('get', Cookies.get('csrfToken'))
-        if (res.data.nodes.length > 0) {
-          _t.graph_id = res.data.id
-          const tmp = res.data
-          tmp.nodes.map(function(node) {
-            node.label = node.id
-            if (!node.style) {
-              node.style = {}
-            }
-            node.style.fill = colors[node.type % colors.length]
-            node.style.stroke = strokes[node.type % strokes.length]
-          })
-          tmp.edges.map(function(edge) {
-            if (!edge.style) {
-              edge.style = {}
-            }
-            edge.style.stroke = strokes[edge.type % strokes.length]
-          })
-          if (type === 'new') {
-            _t.data = tmp
-          }
-          if (type === 'add') {
-            _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
-            _t.data.edges = _t.data.edges.concat(tmp.edges)
-            console.log(_t.data.nodes)
-          }
-          _t.graph.data({
-            // groups: _t.data.groups,
-            nodes: _t.data.nodes,
-            edges: _t.data.edges
-          })
-          // console.log(_t.graph.getNodes().length)
-          _t.options = {}
-          _t.graph.render()
-          _t.select_edge()
-        }
+        // _t.select_edge()
+        _t.clearAllStats()
+        _t.graph.paint()
+        _t.graph.setAutoPaint(true)
+        _t.graph.fitView()
         loadingInstance.close()
-      }).catch(function(error) {
-        console.log(error)
+      } else {
+        // axios.defaults.withCredentials = true
+        axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
+          // axios.get('./public/data.json', {
+          params: config,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+          }
+        }).then(function(res) {
+          // console.log(res.data)
+          // console.log('get', Cookies.get('csrfToken'))
+          if (res.data.nodes.length > 0) {
+            _t.graph_id = res.data.id
+            const tmp = _t.handle_data(res.data)
+            if (type === 'new') {
+              _t.data = tmp
+            }
+            if (type === 'add') {
+              _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
+              _t.data.edges = _t.data.edges.concat(tmp.edges)
+              console.log(_t.data.nodes)
+            }
+            _t.graph.data({
+              // groups: _t.data.groups,
+              nodes: _t.data.nodes,
+              edges: _t.data.edges
+            })
+            // console.log(_t.graph.getNodes().length)
+            _t.options = {}
+            _t.graph.render()
+            _t.graph.fitView()
+            _t.select_edge()
+          }
+          loadingInstance.close()
+        }).catch(function(error) {
+          console.log(error)
+        })
+      }
+    },
+    handle_data(data) {
+      data.nodes.map(function(node) {
+        node.label = node.id
+        if (!node.style) {
+          node.style = {}
+        }
+        node.style.fill = colors[node.type % colors.length]
+        node.style.stroke = strokes[node.type % strokes.length]
       })
+      data.edges.map(function(edge) {
+        if (!edge.style) {
+          edge.style = {}
+        }
+        edge.style.stroke = strokes[edge.type % strokes.length]
+      })
+      return data
     },
     select_edge() {
       const _t = this
@@ -498,11 +549,31 @@ export default {
       // axios.defaults.withCredentials = true
       // axios.defaults.xsrfCookieName = 'csrfToken' // default: XSRF-TOKEN
       // axios.defaults.xsrfHeaderName = 'x-csrf-token' // default: X-XSRF-TOKEN
-      console.log(document.cookie)
+      const row = _t.graph.save()
+      const data = {
+        nodes: [],
+        edges: []
+      }
+      for (const node of row.nodes) {
+        const tmp = {}
+        tmp.id = node.id
+        tmp.type = node.type
+        tmp.x = Math.floor(node.x)
+        tmp.y = Math.floor(node.y)
+        data.nodes.push(tmp)
+      }
+      for (const edge of row.edges) {
+        const tmp = {}
+        tmp.source = edge.source
+        tmp.target = edge.target
+        tmp.sourceWeight = edge.sourceWeight
+        tmp.type = edge.type
+        data.edges.push(tmp)
+      }
       axios.post('http://192.168.3.44:7001/api/v1/graphs', {
         // axios.get('./public/data.json', {
         config: config,
-        data: _t.graph.save()
+        data: data
       }, {
         headers: {
           // 'x-csrf-token': Cookies.get('csrfToken'),
@@ -511,6 +582,8 @@ export default {
         }
       }).then(function(res) {
         console.log(res.data)
+        _t.share_url = window.location.href + '/' + res.data.share_key
+        _t.share_dialog = true
         // if (res.data.nodes.length > 0) {
         //   _t.graph_id = res.data.id
         //   const tmp = res.data
@@ -573,7 +646,7 @@ export default {
         id: _t.graph_id,
         expand: nodeId
       })
-      _t.getdata('add')
+      _t.get_data('add')
       // console.log('node', _t.graph.getNodes(), 'edge', _t.graph.getEdges())
     },
     updateLayout(layout) {
@@ -585,6 +658,66 @@ export default {
         nodeSize: 100,
         linkDistance: 100
       })
+    },
+    share_copy(url) {
+      this.$alert(url, '分享链接', {
+        confirmButtonText: '确定'
+        // callback: action => {
+        //   this.$message({
+        //     type: 'info',
+        //     message: `action: ${ action }`
+        //   })
+        // }
+      })
+      // this.$msgbox({
+      //   title: '分享链接',
+      //   message: url,
+      //   showCancelButton: true,
+      //   confirmButtonText: '复制',
+      //   cancelButtonText: '取消',
+      //   beforeClose: (action, instance, done) => {
+      //     if (action === 'confirm') {
+      //       const clipboard = new Clipboard('.code-path .el-button', {
+      //         text: function() {
+      //           return url
+      //         }
+      //       })
+      //       clipboard.on('success', function() {
+      //         this.$message.success('复制成功！')
+      //         done()
+      //       })
+      //       clipboard.on('error', function() {
+      //         this.$message.error('复制失败！')
+      //       })
+      //     } else {
+      //       done()
+      //     }
+      //     // if (action === 'confirm') {
+      //     //   instance.confirmButtonLoading = true
+      //     //   instance.confirmButtonText = '执行中...'
+      //     //   setTimeout(() => {
+      //     //     done()
+      //     //     setTimeout(() => {
+      //     //       instance.confirmButtonLoading = false
+      //     //     }, 300)
+      //     //   }, 3000)
+      //     // } else {
+      //     //   done()
+      //     // }
+      //   }
+      // }).then(action => {
+      //   this.$message({
+      //     type: 'info',
+      //     message: 'action: ' + action
+      //   })
+      // })
+    },
+    handleClose(done) {
+      this.$confirm('确认关闭？')
+        .then(_ => {
+          done()
+        })
+        .catch(_ => {})
     }
   }
 }

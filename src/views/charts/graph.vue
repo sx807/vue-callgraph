@@ -83,7 +83,7 @@
         @resized="resizedGraphEvent"
       >
         <i class="el-icon-delete"></i>
-        <Graph :layout="G_layout" :config="config_graph"/>
+        <Graph :layout="G_layout" :config="config_graph" :ex_data="web_data"/>
       </grid-item>
       <grid-item
         v-show="funlist_show"
@@ -108,6 +108,7 @@ import Graph from '@/components/Charts/Graph'
 import FunList from '@/components/Charts/FunList'
 import VueGridLayout from 'vue-grid-layout'
 import axios from 'axios'
+// import { Loading } from 'element-ui'
 // import bus from '@/utils/bus'
 // import { mapGetters } from 'vuex'
 
@@ -126,10 +127,12 @@ export default {
       ver_list: [],
       path1: '',
       path2: '',
+      web_data: {},
       config_graph: {
         ver: '',
         sou: '',
         tar: '',
+        ex: false,
         w: 1000,
         h: 500
       },
@@ -139,8 +142,6 @@ export default {
         tar: ''
       },
       funlist_show: false,
-      sou: '',
-      tar: '',
       show: false,
       path_list: [],
       web_layout: [
@@ -159,6 +160,10 @@ export default {
     _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
     _t.$EventBus.bus.$on('funlist/show', _t.show_funlist)
     _t.$EventBus.bus.$on('code/show', _t.show_code)
+    console.log(this.$route.params)
+    if (_t.$route.params.hasOwnProperty('pathMatch')) {
+      _t.get_data(this.$route.params.pathMatch)
+    }
   },
   destroyed() {
     const _t = this
@@ -167,24 +172,15 @@ export default {
     _t.$EventBus.bus.$off('code/show')
   },
   mounted() {
-    this.get_ver_list()
+    // console.log(this.$route.fullPath)
+    // console.log(this.$route.path)
+    const _t = this
+    _t.get_ver_list()
   },
   methods: {
     ver_change(item) {
       this.get_path_list()
     },
-
-    // remoteMethod(query) {
-    //   if (query !== '') {
-    //     this.loading = true
-    //     for (const item in this.path_all_list) {
-    //       item.value.index
-    //     }
-    //     this.loading = false
-    //   } else {
-    //     this.path_list = []
-    //   }
-    // },
     layout_change() {
       const _t = this
       console.log(_t.G_layout)
@@ -306,6 +302,42 @@ export default {
       // console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
       this.config_graph.h = Math.floor(newHPx - 40)
       this.config_graph.w = Math.floor(newWPx)
+    },
+
+    get_data(key) {
+      const _t = this
+      // axios.defaults.withCredentials = true
+      const url = 'http://192.168.3.44:7001/api/v1/graphs/' + key
+      axios.get(url, { // 还可以直接把参数拼接在url后边
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+        }
+      }).then(function(res) {
+        console.log(res.data)
+        if (Object.keys(res.data).length > 0) {
+          // _t.web_data = res.data
+          // console.log('get', res.data)
+          _t.set_web_data(res.data)
+        }
+      }).catch(function(error) {
+        console.log(error)
+      })
+    },
+    set_web_data(row) {
+      const _t = this
+      _t.web_data = row.data
+      console.log('set', row.data)
+      // set config
+      const tmp = {}
+      tmp.ver = row.config.version
+      tmp.sou = row.config.source
+      tmp.tar = row.config.target
+      tmp.ex = true
+      tmp.w = _t.config_graph.w
+      tmp.h = _t.config_graph.h
+      _t.config_graph = tmp
+      _t.path1 = tmp.sou
+      _t.path2 = tmp.tar
     }
   }
 }

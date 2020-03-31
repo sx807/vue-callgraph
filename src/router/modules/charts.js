@@ -19,6 +19,12 @@ const chartsRouter = {
       meta: { title: 'Graph Chart', noCache: true }
     },
     {
+      path: 'graph/*',
+      component: () => import('@/views/charts/graph'),
+      // name: 'GraphChart',
+      // meta: { title: 'Graph Chart', noCache: true }
+    },
+    {
       path: 'keyboard',
       component: () => import('@/views/charts/keyboard'),
       name: 'KeyboardChart',
