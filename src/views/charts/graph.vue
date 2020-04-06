@@ -82,7 +82,7 @@
         :is-draggable="false"
         @resized="resizedGraphEvent"
       >
-        <i class="el-icon-delete"></i>
+<!--        <i class="el-icon-delete"></i>-->
         <Graph :layout="G_layout" :config="config_graph" :ex_data="web_data"/>
       </grid-item>
       <grid-item
@@ -152,7 +152,7 @@ export default {
       //   console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
       // },
       G_layout: 'random',
-      G_layout_options: ['random', 'force', 'circular', 'concentric', 'grid']
+      G_layout_options: ['random', 'fruchterman', 'force', 'circular', 'concentric', 'grid']
     }
   },
   created() {
@@ -164,6 +164,7 @@ export default {
     if (_t.$route.params.hasOwnProperty('pathMatch')) {
       _t.get_data(this.$route.params.pathMatch)
     }
+    // if (_t.$route.query.hasOwnProperty('ver'))
   },
   destroyed() {
     const _t = this
@@ -176,6 +177,18 @@ export default {
     // console.log(this.$route.path)
     const _t = this
     _t.get_ver_list()
+    if (_t.$route.query.hasOwnProperty('ver')) {
+      _t.config_graph.ver = _t.$route.query.ver
+      this.get_path_list()
+    }
+    if (_t.$route.query.hasOwnProperty('sou')) {
+      _t.config_graph.sou = _t.$route.query.sou
+      _t.path1 = _t.$route.query.sou
+    }
+    if (_t.$route.query.hasOwnProperty('tar')) {
+      _t.config_graph.tar = _t.$route.query.tar
+      _t.path2 = _t.$route.query.tar
+    }
   },
   methods: {
     ver_change(item) {

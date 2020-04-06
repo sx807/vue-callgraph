@@ -150,7 +150,7 @@ export default {
           // _t.graph.set('width', Number(newValue.w))
           // _t.graph.set('height', Number(newValue.h))
           _t.graph.changeSize(_t.graph_w, _t.graph_h)
-          _t.graph.fitView(10)
+          _t.graph.fitView()
           // _t.graph.destroy()
           // _t.initChart()
           // _t.graph.data(_t.data)
@@ -584,42 +584,6 @@ export default {
         console.log(res.data)
         _t.share_url = window.location.href + '/' + res.data.share_key
         _t.share_dialog = true
-        // if (res.data.nodes.length > 0) {
-        //   _t.graph_id = res.data.id
-        //   const tmp = res.data
-        //   tmp.nodes.map(function(node) {
-        //     node.label = node.id
-        //     if (!node.style) {
-        //       node.style = {}
-        //     }
-        //     node.style.fill = colors[node.type % colors.length]
-        //     node.style.stroke = strokes[node.type % strokes.length]
-        //   })
-        //   tmp.edges.map(function(edge) {
-        //     if (!edge.style) {
-        //       edge.style = {}
-        //     }
-        //     edge.style.stroke = strokes[edge.type % strokes.length]
-        //   })
-        //   if (type === 'new') {
-        //     _t.data = tmp
-        //   }
-        //   if (type === 'add') {
-        //     _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
-        //     _t.data.edges = _t.data.edges.concat(tmp.edges)
-        //     console.log(_t.data.nodes)
-        //   }
-        //   _t.graph.data({
-        //     // groups: _t.data.groups,
-        //     nodes: _t.data.nodes,
-        //     edges: _t.data.edges
-        //   })
-        //   // console.log(_t.graph.getNodes().length)
-        //   _t.options = {}
-        //   _t.graph.render()
-        //   _t.select_edge()
-        // }
-        // loadingInstance.close()
       }).catch(function(error) {
         console.log(error)
       })
@@ -653,10 +617,12 @@ export default {
       const _t = this
       console.log(_t.layout)
       _t.graph.updateLayout({
+        width: 1200,
+        height: 600,
         type: layout,
         preventOverlap: true,
-        nodeSize: 100,
-        linkDistance: 100
+        nodeSize: 50,
+        linkDistance: 50
       })
     },
     share_copy(url) {
