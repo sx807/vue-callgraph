@@ -234,16 +234,14 @@ export default {
             'drag-node',
             {
               type: 'tooltip',
-              formatText: function formatText(model) {
+              formatText(model) {
                 return model.id
               }
             },
             {
               type: 'edge-tooltip',
-              formatText: function formatText(model, e) {
-                var edge = e.item
-                return '调用次数：' + edge.getModel().sourceWeight + '<br/>来源：' + edge.getSource().getModel().id + '<br/>去向：' + edge.getTarget().getModel().id
-              }
+              formatText(model) {
+                return '调用次数：' + model.sourceWeight + '<br/>来源：' + model.source + '<br/>去向：' + model.target              }
             }
           ]
         },
@@ -352,7 +350,7 @@ export default {
       })
       _t.graph.on('canvas:click', () => {
         _t.clearAllStats()
-        this.$EventBus.bus.$emit('graph/contextmenu/close')
+        _t.$EventBus.bus.$emit('graph/contextmenu/close')
       })
     },
     clearAllStats() {

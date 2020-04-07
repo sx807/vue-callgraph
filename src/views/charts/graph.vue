@@ -161,22 +161,10 @@ export default {
     _t.$EventBus.bus.$on('funlist/show', _t.show_funlist)
     _t.$EventBus.bus.$on('code/show', _t.show_code)
     console.log(this.$route.params)
+    _t.get_ver_list()
     if (_t.$route.params.hasOwnProperty('pathMatch')) {
       _t.get_data(this.$route.params.pathMatch)
     }
-    // if (_t.$route.query.hasOwnProperty('ver'))
-  },
-  destroyed() {
-    const _t = this
-    _t.$EventBus.bus.$off('graph/path/change')
-    _t.$EventBus.bus.$off('funlist/show')
-    _t.$EventBus.bus.$off('code/show')
-  },
-  mounted() {
-    // console.log(this.$route.fullPath)
-    // console.log(this.$route.path)
-    const _t = this
-    _t.get_ver_list()
     if (_t.$route.query.hasOwnProperty('ver')) {
       _t.config_graph.ver = _t.$route.query.ver
       this.get_path_list()
@@ -189,6 +177,18 @@ export default {
       _t.config_graph.tar = _t.$route.query.tar
       _t.path2 = _t.$route.query.tar
     }
+    // if (_t.$route.query.hasOwnProperty('ver'))
+  },
+  destroyed() {
+    const _t = this
+    _t.$EventBus.bus.$off('graph/path/change')
+    _t.$EventBus.bus.$off('funlist/show')
+    _t.$EventBus.bus.$off('code/show')
+  },
+  mounted() {
+    // console.log(this.$route.fullPath)
+    // console.log(this.$route.path)
+    // const _t = this
   },
   methods: {
     ver_change(item) {

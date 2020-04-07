@@ -312,20 +312,6 @@ const userConfig = {
 
 功能描述：通过此 API 获取函数调用列表数据，使用 http get 请求获取，在请求中须包含所需要的函数调用数据的内核版本号、两个相关路径信息。
 
-api定义： GET /api/v1/functions
-
-controller.action：app.controllers.v1.functions.index
-
-必要接收参数：
-
-```javascript
-params: {
-    version: "X-xx-xx"
-    source: "/xx"
-    target: "/xx"
-}
-```
-
 ### 1.5.1. 文件结构
 
 ```txt
@@ -341,7 +327,7 @@ params: {
 #### 1.5.1.1. 路由文件
 
 app/router.js
-路由文件中定义graph路由，根据 RESTful 风格规范，定义一下路由：
+路由文件中定义functions路由，根据 RESTful 风格规范，定义一下路由：
 
 ```javascript
 router.resources('functions', '/api/v1/functions', controller.v1.functions);
@@ -410,10 +396,6 @@ params: {
 
 功能描述：通过此 API 获取配置信息：服务器存在内核版本，文件夹列表等配置信息的数据。
 
-api定义： GET /api/v1/options
-
-controller.action：app.controllers.v1.options.index
-
 ### 1.6.1. 文件结构
 
 ```txt
@@ -421,46 +403,76 @@ controller.action：app.controllers.v1.options.index
 ├─router.js
 ├─controller
 │  └─v1
-│     └─functions.js
+│     └─options.js
 └─service
-   └─functions.js
+   └─options.js
 ```
 
 #### 1.6.1.1. 路由文件
 
 app/router.js
-路由文件中定义graph路由，根据 RESTful 风格规范，定义一下路由：
+路由文件中定义options路由，根据 RESTful 风格规范，定义一下路由：
 
 ```javascript
-router.resources('functions', '/api/v1/functions', controller.v1.functions);
+router.resources('options', '/api/v1/options', controller.v1.options);
 ```
 
 根据快速生成路由配置，使用了以下路由访问：
-GET | /functions | app.controllers.v1.functions.index
+GET | /options | app.controllers.v1.options.index
+GET | /options/:id | app.controllers.v1.options.show
 
 #### 1.6.1.2. 控制器文件
 
-app/controllers/v1/functions.js
-函数调用列表控制器文件，处理请求的输入数据，调用服务类中的相应函数进行处理，处理后的返回信息，发送给请求方。
+app/controllers/v1/options.js
+配置控制器文件，读取请求路由中数据，调用服务类中的相应函数查库获取数据，处理数据并返回，发送给请求方。
 
 根据快速路由配置定义了以下处理：
 
-1. 对路由 /functions 的 GET 请求，由控制器中 index() 函数进行处理。
-
-控制器中函数先使用验证规则，对请求中包含的数据进行初步验证。如缺少必要数据会返回请求错误的信息，具有防止异常输入和恶意输入的功能。验证通过的数据，作为调用服务类中对应处理函数的输入。等待服务类函数返回处理好的数据，作为请求的返回数据，返回给请求方。
+1. 对路由 /options 的 GET 请求，由控制器中 index() 函数进行处理。
+2. 对路由 /options/:id 的 GET 请求，由控制器中的 show() 函数进行处理。
 
 #### 1.6.1.3. 服务文件
 
-app/service/functions.js
-函数调用列表服务文件，负责相应控制器的调用，处理请求数据，根据请求需求查找数据库获取数据库数据，处理读取到的数据，生成请求所需要的数据，返回给控制器。
+app/service/options.js
+配置服务文件，负责响应控制器的调用，查询数据库并读取数据，处理数据，生成请求所需要的数据，返回给控制器。
 
-test() 函数，根据输入配置，查找数据库，生成函数调用列表的数据
+index() 函数，查询数据库，生成现有内核版本列表的数据
+show() 函数，根据输入版本号，查询数据库，生成此版本内核路径列表的数据
 
 ### 1.6.2. 设计实现
 
-## 1.7. API 缓存机制
+#### 1.6.2.1. 获取内核版本列表
+
+用于获取确定现有内核版本数据，使用路由 /options 的 GET 请求进行获取，请求中不包含数据。
+
+读取内核版本列表，将版本列表数据返回。列表格式如下：
+
+```javascript
+const list = [{
+    value: '4-15-18',
+    label: '4.15.18'
+  }];
+```
+
+由于数据库表名在读取时使用‘.’分隔存在字符冲突，指令会将‘.’解析为表的子属性，而非所需的表名，故将版本号部分更改为使用‘-’分隔形式如‘4-15-18’的格式。
+
+在页面显示过程中为符合用户习惯的方式，版本号依旧显示为‘4.15.18’的形式。
+
+#### 1.6.2.2. 获取内核路径别表
+
+用于获取确定内核版本的路径数据，使用路由 /options/:id 的 GET 请求进行获取，请求中不包含数据。
+
+根据请求路径解析得到 id ，即所需内核的版本号，控制器使用 id 作为参数，调用服务中的 show() 函数。
+
+show() 函数使用SQL服务中查询 SOLIST 表，通过sql语句的分组方式，查询得到无重复的路径列表，并将为‘/’的根路径补充到列表中，返回给控制器。
+
+控制器将返回数据，发送给请求方。
+
+## 1.7. 历史记录服务
 
 对于数据获取API，设置缓存机制，能够对相同API、相同参数的请求，处理数据进行缓存，设置过期机制。
+
+## 1.8. SQL服务
 
 # 2. Web页面 Vue.js
 
@@ -525,119 +537,112 @@ npm run build:prod
          graph.vue
 ```
 
-## 2.4. Graph 函数调用图
-
-基于 Antv G6 实现的函数调用交互图，能够查看内核模块之间的关系。
-通过页面上的一组选择器进行内核版本、源路径、目标路径的选择，生成对应的函数调用图
+## 2.4. 调用图页面
 
 ### 2.4.1. 页面文件结构
 
-/src/views/charts/graph.vue为页面文件，文件中包含选择路径版本等选择器组件、函数调用图、函数调用表组件。
+/src/views/charts/graph.vue 为页面文件，文件中包含选择路径版本等选择器组件、函数调用图、函数调用表组件。
 
-/components/Charts/Graph.vue
+/components/Charts/Graph.vue 为函数调用图组件
+/components/Charts/ContextMenu.vue 为右键菜单组件
+/components/Charts/FunList.vue 为函数调用列表组件
 
 ```txt
 /src
 ├─components
 │  └─Charts
-│     │  ContextMenu.vue
-│     │  FunList.vue
-│     └─ Graph.vue
+│     │  ContextMenu.vue  // 右键菜单组件
+│     │  FunList.vue      // 函数调用列表组件
+│     └─ Graph.vue        // 函数调用图组件
 │
 └─views
     └─charts
-       └─graph.vue
+       └─graph.vue        // 调用图页面
 ```
 
 ### 2.4.2. 页面实现功能
 
 #### 2.4.2.1. 下拉菜单选择内核版本
 
-使用UI库element-ui中的选择器组件实现，
+使用UI库element-ui中的选择器组件实现，能够在下拉菜单中选择服务器存储数据的内核版本，支持搜索选择。
+
+组件页面代码：
+
+```html
+<el-select v-model="config_graph.ver" filterable placeholder="选择内核版本" @change="ver_change">
+  <el-option
+    v-for="item in ver_list"
+    :key="item.value"
+    :label="item.label"
+    :value="item.value"
+  />
+</el-select>
+```
+
+在页面组件实例已经创建完成之后 created() 函数中执行获取内核版本列表函数 get_ver_list()。
+
+get_ver_list() 函数使用 axios 发送 GET 请求从 /options API 获取内核版本列表，并将获取到的数据保存在 ver_list 中，选择器的下拉菜单，通过 v-for 从列表中获取值和标签数据。
+
+```javascript
+data() {
+  return {
+    ver_list: [{
+      value: '4-15-18',
+      label: '4.15.18'
+    }]
+  }
+}
+```
+
+用户通过选择器选中菜单中的子项目后，会更改组件 v-model 的值为选中项的值，同时触发 @change 事件绑定的函数 ver_change()。
+
+ver_change() 函数会调用 get_path_list() 函数来来获取对应内核版本的路径列表。
+
+get_path_list() 函数发送 GET 请求从 /options/内核版本号 API 获取此版本内核的路径列表，将得到的数据转换成路径菜单所需要的格式，保存在 path_list 中
+
+```javascript
+data() {
+  return {
+    path_list: [
+        { value: '/' },
+        { value: '/mm'},
+        ...
+      ]
+  }
+}
+```
 
 #### 2.4.2.2. 可搜索下拉菜单选择路径
 
-使用者选择内核版本后，页面会动态加载路径列表，
+同内核版本选择，使用UI库element-ui中的选择器组件实现，支持搜索选择路径。
 
-#### 2.4.2.3. 函数调用图查看
+标签中的配置项 filterable 为开启搜索。组件页面代码：
 
-对于生成的函数调用图，查看效果实现有：
+```html
+<el-select
+  v-model="path1"
+  filterable
+  placeholder="请输入源路径"
+  @change="path_change('sou')"
+>
+  <el-option
+    v-for="item in path_list"
+    :key="item.value"
+    :label="item.value"
+    :value="item.value"
+  />
+</el-select>
+```
 
-1. 画布缩放
-2. 拖动整体
-3. 拖动节点
-4. 鼠标覆盖高亮
-5. 详细信息气泡提示框显示
-6. 缩略图
+组件从 path_list 中通过 v-for 循环从列表中获取值和标签数据。用户选中子项目后，会更改组件显示值，同时触发 @change 事件绑定的函数 path_change('sou')，函数传入参数表示修改路径的种类，sou表示源路径，tar表示目标路径，both表示两个路径同时修改，用于图交互切换功能实现。函数将选择的路径赋值给图的配置项中对应值。
 
-#### 2.4.2.4. 筛选查看
-
-通过开关切换显示不同类型的边，切换类别为
-
-1. 源为非所选路径节点
-2. 目标为非所选路径节点
-3. 源路径节点 到 目标路径节点
-4. 目标路径节点 到 源路径节点
-5. 源路径节点 到 源路径节点
-6. 目标路径节点 到 目标路径节点
-
-#### 2.4.2.5. 右键菜单
-
-实现通过右键函数调用图中组件，弹出对应菜单
-
-1. 右键节点
-   菜单内容为：
-
-2. 右键边
-   菜单内容为：
-
-3. 右键画布
-   菜单内容为：
-
-#### 2.4.2.6. 动态加载部分更新数据
-
-实现动态更新图中节点数据，将所选节点，更新为其下级路径内容
-
-通过对节点右键菜单中的展开节点，对应函数获取节点信息，并向服务器请求当前节点的展开后新增数据，同时图中将此节点与其相连的边进行删除显示，获取到数据后，对图中数据进行加载，重新绘制当前函数调用图
-
-#### 2.4.2.7. 返回上一个图
-
-通过右键画布的返回触发
-
-加载新的图时，会将之前图数据进行备份，返回上一张图时，会更换图数据，并调整每个节点位置，保持与之前图的一致性
-
-#### 2.4.2.8. 分享图
-
-* 分享方
-
-通过右键画布弹出菜单，在菜单中选择分享图。
-
-点击后，页面将通过G6图中save()函数获取当前图中节点和边的详细数据，对数据进行过滤，只将当前图的必要数据上传给服务器。
-
-服务器收到数据进行存储，将图的版本、源路径和目标路径等标志信息进行MD5处理，得到哈希值作为数据的索引，返回给页面此哈希数据。
-
-页面补全url路径等数据生成分享链接，并弹窗显示链接。
-
-* 接收方
-
-在新的页面中打开分享链接，页面初始化过程中会根据url中包含的哈希数据，向服务器获取分享页面的配置和图数据，并自动更新图，此时图上节点位置与分享时的图相同
-
-## 2.5. Function List 函数列表
-
-组件用于显示**源路径**中所包含函数调用**目标路径**中函数的调用列表
-
-组件通过调用图边的右键菜单进行调出显示，显示表格内容如下
-
- | 源函数 | 所在文件 | 行号 | 调用次数 | 调用行号 | 被调函数 | 所在文件 | 行号
--| - | - | - | - | - | - | - | -
-
-## 2.6. 拖拽式页面布局
+#### 2.4.2.3. 拖拽式页面布局
 
 基于Vue组件 jbaysolutions/vue-grid-layout 实现拖拽页面组件，进行自定义布局。
 
 使用在函数调用图页面，当前版本使用函数调用图和函数列表两个模块，能够对函数调用图进行尺寸调整（由于函数调用图模块内部需要相应鼠标拖拽，故当前版本删除拖拽函数调用图模块，但将其他可拖动模块放置在周围。），对函数调用列表进行拖拽和尺寸调整。
 
-### 2.6.1. 安装组件
+##### 2.4.2.3.1. 安装组件
 
 在项目路径下，使用包管理程序进行安装，命令如下
 
@@ -667,7 +672,7 @@ yarn add vue-grid-layout
    }
 ```
 
-### 2.6.2. 使用组件
+##### 2.4.2.3.2. 使用组件
 
 ```html
 <grid-layout
@@ -690,11 +695,11 @@ yarn add vue-grid-layout
     </grid-layout>
 ```
 
-### 2.6.3. 实现功能
+##### 2.4.2.3.3. 实现功能
 
 在函数调用图页面使用过程中，需要同时查看函数调用图，函数调用表等多个模块，为满足用户使用过程中对于页面布局的需求差异，实现自定义布局功能，具体如下：
 
-#### 2.6.3.1. 函数调用图模块的调整尺寸
+* 函数调用图模块的调整尺寸
 
 函数调用图模块作为查看函数调用的主要组件，组件嵌套在布局子项目下会对鼠标事件相应造成冲突。由于布局组件和函数调用图组件都具有相应鼠标按住左键的拖拽事件，会造成用户想要拖拽函数调用图内部节点时，布局子项目组件整体发生拖拽的情况。故取消此布局子项目组件的拖拽功能。
 
@@ -702,17 +707,17 @@ yarn add vue-grid-layout
 
 函数调用图模块使用canvas画布为固定尺寸，调整尺寸后的模块存在显示出界的情况，需要在布局子项目发生尺寸改变后，对函数调用图进行调整，使函数调用图与布局调整后的显示范围一致。
 
-#### 2.6.3.2. 函数调用表宽度调整和拖拽布局
+* 函数调用表宽度调整和拖拽布局
 
 函数调用表模高度固定，对模块尺寸体现在宽度上，同样通过模块右下角 “ ┛ ” 型图标对模块进行尺寸改变。鼠标悬浮在调用表上时，显示为方向箭头，按住鼠标左键就可以将模块拖拽改变布局位置。
 
-### 2.6.4. 设计实现
+##### 2.4.2.3.4. 设计实现
 
 当前页面内容为两个模块，默认布局为上下两部分，当前设计能够通过改变模块尺寸，拖拽模块等操作来实现左右或交换上下位置的布局改变。
 
 通过模块嵌套，将函数调用图和函数调用表模块作为布局模块的子项目，对其子项目进行不同的配置参数，用来实现子项目的不同功能，具体描述如下：
 
-#### 2.6.4.1. 函数调用图子项目
+* 函数调用图子项目
 
 函数调用图子项目主要特点为：不响应拖拽，能够改变尺寸，在模块尺寸改变后，还需要对函数调用图画布尺寸进行修改。
 
@@ -771,7 +776,7 @@ watch: {
     }
 ```
 
-#### 2.6.4.2. 函数调用表子项目
+* 函数调用表子项目
 
 函数调用表子项目能够拖拽，能够改变尺寸，因此配置属性中，只需要对其位置和大小限制进行配置，无需增加相应事件。
 
@@ -791,3 +796,402 @@ watch: {
         <FunList :config="config_funlist" />
       </grid-item>
 ```
+
+## 2.5. Graph 函数调用图组件
+
+组件文件位置为: `/components/Charts/Graph.vue`
+
+基于 Antv G6 实现的函数调用交互图，能够查看内核模块之间的关系。
+通过页面上的一组选择器进行内核版本、源路径、目标路径的选择，生成对应的函数调用图
+
+### 2.5.1. 安装和使用G6组件
+
+在项目中使用 NPM 包引入
+Step 1: 使用命令行在项目目录下执行以下命令：
+
+```sh
+npm install @antv/g6 --save
+```
+
+Step 2: 在需要用的 G6 的 JS 文件中导入：
+
+```sh
+import G6 from '@antv/g6';
+```
+
+> <https://g6.antv.vision/zh/docs/manual/getting-started>
+
+### 2.5.2. 在页面中使用图组件
+
+基于 Antv G6 实现的动态调用图查看组件，页面中插入组件标签进行使用：
+
+```html
+<grid-item v-if="show_graph()">
+  <Graph :layout="G_layout" :config="config_graph" :ex_data="web_data"/>
+</grid-item>
+```
+
+```javascript
+data() {
+  return {
+    web_data: {},
+    config_graph: {
+      ver: '',
+      sou: '',
+      tar: '',
+      ex: false,
+      w: 1000,
+      h: 500
+    },
+    G_layout: 'random',
+  }
+}
+```
+
+传入参数为布局、配置和外部数据，布局用于改变图的布局方式，配置中包含版本、源路径、目标路径、是否使用外部数据、宽、高，外部数据是加载分享链接时的图数据。
+
+图标签放置在布局组件中，由 show_graph() 函数控制是否显示图组件，show_graph() 函数对图的配置参数进行判断，当ver、sou、tar全不为空字符时页面才会渲染此组件，防止图的配置不完整，不能获取到图中数据的情况。
+
+### 调用图的实现
+
+图组件由若干筛选开关、G6组件Div标签、右键菜单组件、弹窗组件组成。
+
+图组件可见后会进行组件的创建，在创建之后会先将配置进行组件内数据的更新，初始化图，根据配置判断图是获取数据，还是使用外部数据进行绘制，代码如下：
+
+```javascript
+mounted() {
+    const _t = this
+    _t.graph_config = _t.config
+    _t.initChart()
+    if (_t.config.ex) {
+      _t.get_data('external')
+    } else {
+      _t.get_data('new')
+    }
+  },
+```
+
+初始化图会创建G6对象，通过增加配置项参数来实现部分需求功能，并配置图中的事件响应，基础图初始化参数如下：
+
+```javascript
+initChart() {
+  const _t = this
+  _t.graph = new G6.Graph({
+    container: 'graphChart',
+    width: _t.graph_w,
+    height: _t.graph_h
+  })
+}
+```
+
+根据实现目标对初始化配置进行完善：
+
+#### 插件-缩略图
+
+由G6提供的辅助插件，用于导航大规模图。
+
+首先引入插件，需要在引入部分添加引入：
+
+```javascript
+const Minimap = require('@antv/g6/build/minimap')
+```
+
+在初始化过程中实例化缩略图插件，并将插件配置到图的插件列表中：
+
+```javascript
+initChart() {
+  const _t = this
+  // 实例化 minimap 插件
+  _t.minimap = new Minimap({
+    size: [200, 100],
+    className: 'minimap',
+    type: 'keyShape'
+  })
+  _t.graph = new G6.Graph({
+    ···   // 其他配置项
+    plugins: [_t.minimap], // 将 minimap 实例配置到图上
+  })
+}
+```
+
+#### 缩放、画布拖动、节点拖动
+
+此类为G6提供的属性，需要在配置中启用：
+
+```javascript
+  _t.graph = new G6.Graph({
+    ···   // 其他配置项
+    // 配置最大缩放、最小缩放的比例
+    minZoom: 0.5,
+    maxZoom: 3,
+    modes: {
+      default: [
+        'drag-canvas',  // 开启画布拖动
+        'zoom-canvas',  // 开启缩放
+        'drag-node',    // 开启节点拖动
+        ···   // 其他配置项
+      ]
+    },
+  })
+}
+```
+
+#### 详细信息气泡提示框
+
+G6提供的提示框功能，能够自定义提示框显示内容，配置如下：
+
+```javascript
+_t.graph = new G6.Graph({
+    ···   // 其他配置项
+    modes: {
+      default: [
+        {
+          // 启用节点提示框
+          type: 'tooltip',
+          formatText(model) {
+            return model.id
+          }
+        },
+        {
+          // 启用边提示框
+          type: 'edge-tooltip',
+          formatText(model) {
+            return '调用次数：' + model.sourceWeight + '<br/>来源：' + model.source + '<br/>去向：' + model.target
+          }
+        }
+        ···   // 其他配置项
+      ]
+    },
+  })
+```
+
+在提示框的 formatText属性配置中，读取当前节点的数据，显示提示框内容。
+
+#### 鼠标覆盖高亮
+
+鼠标覆盖高亮，需要配置节点和边的状态属性及不同状态下节点和边的样式：
+
+```javascript
+_t.graph = new G6.Graph({
+    ···   // 其他配置项
+    nodeStateStyles: {
+    // 节点样式配置
+      default: {
+        lineWidth: 1,
+        fill: 'steelblue'
+      },
+      highlight: {
+        opacity: 1
+      },
+      dark: {
+        opacity: 0.2
+      }
+    },
+    edgeStateStyles: {
+    // 边状态配置
+      default: {
+        opacity: 0.2,
+        lineAppendWidth: 3
+      },
+      highlight: {
+        opacity: 1
+      }
+    }
+  })
+```
+
+配置中将节点高亮透明度设为1，暗状态透明度设为0.2，边默认状态透明度为0.2，高亮状态透明度为1。实现无鼠标覆盖下显示全部节点，边进行低透明度处理。鼠标覆盖的节点及其相邻节点和边切换为高亮状态，其他节点切换为暗状态；鼠标覆盖的边及其两端节点切换为高亮状态，其他节点切换为暗状态。
+
+为实现鼠标覆盖的相应，需要对图增加响应事件，当鼠标覆盖节点和边时，通过函数去切换节点和边的状态。
+
+```javascript
+initChart() {
+  const _t = this
+  _t.graph = new G6.Graph({
+    ···   // 其他配置项
+  })
+  ···   // 其他配置项
+  // 节点鼠标覆盖事件
+  _t.graph.on('node:mouseenter', function(e) {
+    var item = e.item
+    _t.graph.setAutoPaint(false)
+    _t.graph.getNodes().forEach(function(node) {
+      _t.graph.clearItemStates(node)
+      _t.graph.setItemState(node, 'dark', true)
+    })
+    _t.graph.setItemState(item, 'dark', false)
+    _t.graph.setItemState(item, 'highlight', true)
+    _t.graph.getEdges().forEach(function(edge) {
+      if (edge.getSource() === item) {
+        _t.graph.setItemState(edge.getTarget(), 'dark', false)
+        _t.graph.setItemState(edge.getTarget(), 'highlight', true)
+        _t.graph.setItemState(edge, 'highlight', true)
+        edge.toFront()
+      } else if (edge.getTarget() === item) {
+        _t.graph.setItemState(edge.getSource(), 'dark', false)
+        _t.graph.setItemState(edge.getSource(), 'highlight', true)
+        _t.graph.setItemState(edge, 'highlight', true)
+        edge.toFront()
+      } else {
+        _t.graph.setItemState(edge, 'highlight', false)
+      }
+    })
+    _t.graph.paint()
+    _t.graph.setAutoPaint(true)
+  })
+
+  // 边鼠标覆盖事件
+  _t.graph.on('edge:mouseenter', function(e) {
+    var item = e.item
+    // console.log(e)
+    _t.graph.setAutoPaint(false)
+    _t.graph.getNodes().forEach(function(node) {
+      _t.graph.clearItemStates(node)
+      _t.graph.setItemState(node, 'dark', true)
+    })
+    _t.graph.setItemState(item, 'highlight', true)
+    _t.graph.setItemState(item.getTarget(), 'dark', false)
+    _t.graph.setItemState(item.getTarget(), 'highlight', true)
+    _t.graph.setItemState(item.getSource(), 'dark', false)
+    _t.graph.setItemState(item.getSource(), 'highlight', true)
+    _t.graph.paint()
+    _t.graph.setAutoPaint(true)
+  })
+
+  // 鼠标离开后恢复节点和边的默认状态
+  _t.graph.on('node:mouseleave', _t.clearAllStats)
+  _t.graph.on('edge:mouseleave', _t.clearAllStats)
+}
+
+clearAllStats() {
+  const _t = this
+  _t.graph.setAutoPaint(false)
+  _t.graph.getNodes().forEach(function(node) {
+    _t.graph.clearItemStates(node)
+  })
+  _t.graph.getEdges().forEach(function(edge) {
+    _t.graph.clearItemStates(edge)
+  })
+  _t.graph.paint()
+  _t.graph.setAutoPaint(true)
+},
+```
+
+#### 其他配置
+
+还有一些配置如节点样式，边属性等，和绑定鼠标右键事件来显示右键菜单。这里只说明图中的事件绑定，下文有对右键菜单的详细说明。
+
+图中节点、边、画布都涉及右键菜单，右键菜单中内容会根据右键的目标不同而改变，由于右键菜单组件和其他组件间也需要传递事件，为统一事件传递方式，故使用全局定义的 EventBus 事件传输方式来传递事件。
+
+对节点、边和画布分别定义右键菜单打开事件，并传递点击事件属性数据，被点击对象的数据可以从中读取到。
+
+对画布左键点击事件绑定关闭右键菜单。
+
+```javascript
+initChart() {
+  const _t = this
+  _t.graph = new G6.Graph({
+    ···   // 其他配置项
+  })
+  ···   // 其他配置项
+  _t.graph.on('node:contextmenu', evt => {
+    _t_.$EventBus.bus.$emit('graph/contextmenu/open', evt)
+  })
+  _t.graph.on('edge:contextmenu', evt => {
+    _t_.$EventBus.bus.$emit('graph/contextmenu/open', evt)
+  })
+  _t.graph.on('canvas:contextmenu', evt => {
+    _t_.$EventBus.bus.$emit('graph/contextmenu/open', evt)
+  })
+  _t.graph.on('canvas:click', () => {
+    _t.clearAllStats()
+    _t.$EventBus.bus.$emit('graph/contextmenu/close')
+  })
+}
+```
+
+#### 2.5.2.1. 筛选查看
+
+通过开关切换显示不同类型的边，切换类别为
+
+1. 源为非所选路径节点
+2. 目标为非所选路径节点
+3. 源路径节点 到 目标路径节点
+4. 目标路径节点 到 源路径节点
+5. 源路径节点 到 源路径节点
+6. 目标路径节点 到 目标路径节点
+
+#### 2.5.2.2. 右键菜单
+
+组件文件位置为: `/components/Charts/ContexMenu.vue`
+
+实现通过右键函数调用图中组件，弹出对应菜单，并通过点击菜单列表，实现图切换、页面跳转、调用列表切换等操作。
+
+组件页面内容为列表，通过v-show属性控制是否显示，绑定样式为对象 contextMenuStyle，通过修改变量内部属性来改变右键菜单出现位置。菜单列表内容通过循环读取 contextMenuList 中数据来显示，绑定点击事件为doChick(item) 输入参数为被点击的列表数据。页面标签如下：
+
+```html
+<template>
+  <div>
+    <ul v-show="isShow" class="context-menu" :style="contextMenuStyle">
+      <li v-for="(item, index) in contextMenuList" :key="index" @click="doChick(item)">{{ item.label }}</li>
+    </ul>
+  </div>
+</template>
+```
+
+created() {
+    const _t = this
+    _t.$EventBus.bus.$on('graph/contextmenu/open', _t.doShow)
+    _t.$EventBus.bus.$on('graph/contextmenu/close', _t.doHide)
+  },
+  destroyed() {
+    const _t = this
+    _t.$EventBus.bus.$off('graph/contextmenu/open')
+    _t.$EventBus.bus.$off('graph/contextmenu/close')
+  },
+
+1. 右键节点
+   菜单内容为：
+
+2. 右键边
+   菜单内容为：
+
+3. 右键画布
+   菜单内容为：
+
+#### 2.5.2.3. 动态加载部分更新数据
+
+实现动态更新图中节点数据，将所选节点，更新为其下级路径内容
+
+通过对节点右键菜单中的展开节点，对应函数获取节点信息，并向服务器请求当前节点的展开后新增数据，同时图中将此节点与其相连的边进行删除显示，获取到数据后，对图中数据进行加载，重新绘制当前函数调用图
+
+#### 2.5.2.4. 返回上一个图
+
+通过右键画布的返回触发
+
+加载新的图时，会将之前图数据进行备份，返回上一张图时，会更换图数据，并调整每个节点位置，保持与之前图的一致性
+
+#### 2.5.2.5. 分享图
+
+* 分享方
+
+通过右键画布弹出菜单，在菜单中选择分享图。
+
+点击后，页面将通过G6图中save()函数获取当前图中节点和边的详细数据，对数据进行过滤，只将当前图的必要数据上传给服务器。
+
+服务器收到数据进行存储，将图的版本、源路径和目标路径等标志信息进行MD5处理，得到哈希值作为数据的索引，返回给页面此哈希数据。
+
+页面补全url路径等数据生成分享链接，并弹窗显示链接。
+
+* 接收方
+
+在新的页面中打开分享链接，页面初始化过程中会根据url中包含的哈希数据，向服务器获取分享页面的配置和图数据，并自动更新图，此时图上节点位置与分享时的图相同
+
+## 2.6. Function List 函数列表
+
+组件用于显示**源路径**中所包含函数调用**目标路径**中函数的调用列表
+
+组件通过调用图边的右键菜单进行调出显示，显示表格内容如下
+
+ | 源函数 | 所在文件 | 行号 | 调用次数 | 调用行号 | 被调函数 | 所在文件 | 行号
+-| - | - | - | - | - | - | - | -
