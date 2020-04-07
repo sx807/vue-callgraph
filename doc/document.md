@@ -1139,39 +1139,102 @@ initChart() {
 </template>
 ```
 
+右键菜单组件的显示和隐藏都是通过事件触发的，因此在组件创建后优先绑定事件响应，同时在组件销毁后要接触绑定的事件：
+
+```javascript
 created() {
-    const _t = this
-    _t.$EventBus.bus.$on('graph/contextmenu/open', _t.doShow)
-    _t.$EventBus.bus.$on('graph/contextmenu/close', _t.doHide)
-  },
-  destroyed() {
-    const _t = this
-    _t.$EventBus.bus.$off('graph/contextmenu/open')
-    _t.$EventBus.bus.$off('graph/contextmenu/close')
-  },
+  const _t = this
+  _t.$EventBus.bus.$on('graph/contextmenu/open', _t.doShow)
+  _t.$EventBus.bus.$on('graph/contextmenu/close', _t.doHide)
+},
+destroyed() {
+  const _t = this
+  _t.$EventBus.bus.$off('graph/contextmenu/open')
+  _t.$EventBus.bus.$off('graph/contextmenu/close')
+},
+```
+
+`doShow(data)` 在响应`graph/contextmenu/open`的事件后执行，传入参数为事件对象，优先对事件数据进行组件内变量的更新，将其中包含的图中右键所点击的目标，作为调用`handleContextMenuList(item)`函数的参数，来确定菜单显示选项的列表，再执行`handleContextMenuStyle()`函数，读取存储的事件数据，获取点击位置坐标，修改右键菜单的样式位置，实现在鼠标右侧出现右键菜单的目的。
+
+`doHide()` 函数会响应 `graph/contextmenu/close` 事件关闭菜单，同时负责将本地变量存储的事件对象数据、菜单列表清空，并将判断显示的变量赋值为`false`，达到关闭右键菜单的目的。
+
+```javascript
+doShow(data) {
+  const _t = this
+  _t.options = data
+  console.log(_t.options)
+  _t.handleContextMenuList(_t.options.item)
+  // 处理样式
+  _t.handleContextMenuStyle()
+  _t.isShow = true
+},
+doHide() {
+  const _t = this
+  _t.options = null
+  _t.contextMenuList = []
+  _t.isShow = false
+}
+```
+
+右键菜单内容会根据目标来确定，`handleContextMenuList(item)`函数中，由于右键画布没有目标数据，通过判断传入参数是否为未定义或空，确定目标为画布。若传入对象有数据，则通过对象 getType() 方法判断节点和边。
+
+得到目标类型后将对应的项目列表赋值给 contextMenuList，页面会根据数据变化自动渲染列表。菜单内容分别问：
 
 1. 右键节点
-   菜单内容为：
+   菜单内容为：显示源码、设为源路径、设为目标路径、展开下一级、删除节点
 
 2. 右键边
-   菜单内容为：
+   菜单内容为：后退、显示函数列表、切换调用图、切换内部调用图
 
 3. 右键画布
-   菜单内容为：
+   菜单内容为：分享此图、后退
+
+点击菜单内容 `doChick(val)` 函数会根据点击项目，执行相应操作，操作主要生成需要传递的必要数据，并触发相应的事件：
+
+1. 修改图配置的路径，将图路径参数通过页面事件传递；
+2. 增加图配置的参数，新增配置属性，如expand和per，通过事件传递给图组件；
+3. 显示函数调用列表，将列表获取所需的配置数据通过事件传递；
+4. 跳转源码页面，通过事件调用图页面函数进行新页面的跳转。
 
 #### 2.5.2.3. 动态加载部分更新数据
 
 实现动态更新图中节点数据，将所选节点，更新为其下级路径内容
 
-通过对节点右键菜单中的展开节点，对应函数获取节点信息，并向服务器请求当前节点的展开后新增数据，同时图中将此节点与其相连的边进行删除显示，获取到数据后，对图中数据进行加载，重新绘制当前函数调用图
+调用图组件创建后绑定事件：`_t.$EventBus.bus.$on('graph/expand', _t.expand_node)`
+
+通过对节点右键菜单中的`展开节点`所触发的`graph/expand`事件，`expand_node(node)`函数读取事件传递的节点id数据。
+
+遍历当前图中的节点和边数据，将需要更新的节点从节点列表中删除，将与需要更新的节点所连接的边从边列表中删除。
+
+设置数据获取选项，包含有图id和expand属性，调用 `get_data('add')` 函数来获取增量数据。
+
+`get_data('add')` 将数据获取选项增加到请求参数中，通过 `/graphs` API GET请求获取数据，请求所包含的参数如下：
+
+```javascript
+params: {
+    version: "4-xx-xx",
+    source: "/xx",
+    target: "/xx",
+    id: "4-xx-xx /xx /xx",
+    espand: "/xx/xx"
+}
+```
+
+得到请求返回的数据，将增加的节点和边数据与删除拓展节点相关数据后的列表合并，使用合并后的数据渲染调用图，实现增量更新拓展节点。
 
 #### 2.5.2.4. 返回上一个图
 
-通过右键画布的返回触发
+调用图组件创建后绑定事件：`_t.$EventBus.bus.$on('graph/back', _t.back_graph)`
 
-加载新的图时，会将之前图数据进行备份，返回上一张图时，会更换图数据，并调整每个节点位置，保持与之前图的一致性
+加载新的图之前,通过`backup()`函数进行备份，保存当前图的id、布局、配置和完整数据。
+
+通过对节点右键菜单中的`后退`所触发的`graph/back`事件，`back_graph()`函数会将使用备份的数据更新图数据，由于图已存在布局方式的属性，无法直接读取数据中的x、y属性来绘制节点，而是依据布局方式进行布局。因此恢复图数据后，根据备份数据中的坐标，使用`graph.updateItem(item, node)`逐个更新图上节点位置，使节点恢复为备份数据相同状态，保持与备份图的一致性。
 
 #### 2.5.2.5. 分享图
+
+调用图组件创建后绑定事件：`_t.$EventBus.bus.$on('graph/post', _t.save_graph)`
+
+通过对节点右键菜单中的`分享此图`所触发的`graph/post`事件，`save_graph()`函数读取事件传递的节点id数据。
 
 * 分享方
 
