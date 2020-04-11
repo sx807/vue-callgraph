@@ -134,6 +134,7 @@ export default {
   },
   data() {
     return {
+      url: '/api/v1/functions',
       table_id: '',
       options: {},
       height: 500,
@@ -155,7 +156,7 @@ export default {
       for (const key in _t.options) {
         config[key] = _t.options[key]
       }
-      axios.get('http://192.168.3.44:7001/api/v1/functions', { // 还可以直接把参数拼接在url后边
+      axios.get(_t.url, { // 还可以直接把参数拼接在url后边
         params: config,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'

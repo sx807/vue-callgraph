@@ -112,6 +112,7 @@ export default {
   },
   data() {
     return {
+      url: '/api/v1/graphs',
       graph: null,
       minimap: null,
       graph_id: '',
@@ -405,7 +406,7 @@ export default {
         loadingInstance.close()
       } else {
         // axios.defaults.withCredentials = true
-        axios.get('http://192.168.3.44:7001/api/v1/graphs', { // 还可以直接把参数拼接在url后边
+        axios.get(_t.url, { // 还可以直接把参数拼接在url后边
           // axios.get('./public/data.json', {
           params: config,
           headers: {
@@ -568,7 +569,7 @@ export default {
         tmp.type = edge.type
         data.edges.push(tmp)
       }
-      axios.post('http://192.168.3.44:7001/api/v1/graphs', {
+      axios.post(_t.url, {
         // axios.get('./public/data.json', {
         config: config,
         data: data

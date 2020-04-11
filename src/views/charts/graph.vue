@@ -122,7 +122,7 @@ export default {
   },
   data() {
     return {
-      url: 'http://192.168.3.44:7001/api/v1/',
+      url: '/api/v1/',
       // ver: '',
       ver_list: [],
       path1: '',

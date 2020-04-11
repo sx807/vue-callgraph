@@ -1220,7 +1220,7 @@ params: {
 }
 ```
 
-得到请求返回的数据，将增加的节点和边数据与删除拓展节点相关数据后的列表合并，使用合并后的数据渲染调用图，实现增量更新拓展节点。
+得到请求返回的数据，将得到数据和现有数据合并，使用`graph.data(data)`函数，使用合并后的数据渲染调用图，实现增量更新拓展节点。
 
 #### 2.5.2.4. 返回上一个图
 
@@ -1234,13 +1234,36 @@ params: {
 
 调用图组件创建后绑定事件：`_t.$EventBus.bus.$on('graph/post', _t.save_graph)`
 
-通过对节点右键菜单中的`分享此图`所触发的`graph/post`事件，`save_graph()`函数读取事件传递的节点id数据。
+通过对节点右键菜单中的`分享此图`所触发的`graph/post`事件，使用`save_graph()`函数将当前图的配置和数据，使用`/graphs` API POST 请求将数据上传到服务器。
 
 * 分享方
 
 通过右键画布弹出菜单，在菜单中选择分享图。
 
-点击后，页面将通过G6图中save()函数获取当前图中节点和边的详细数据，对数据进行过滤，只将当前图的必要数据上传给服务器。
+点击后，页面将通过G6图中`graph.save()`函数获取当前图中节点和边的详细数据，对数据进行过滤，只将当前图的必要数据上传给服务器。
+
+在开发过程中存在跨域上传问题，服务器对请求有安全验证，需要对axios增加配置以实现通过服务器CORS验证：
+
+```javascript
+axios.defaults.withCredentials = true
+axios.defaults.xsrfCookieName = 'csrfToken' // default: XSRF-TOKEN
+axios.defaults.xsrfHeaderName = 'x-csrf-token' // default: X-XSRF-TOKEN
+axios.post('http://192.168.3.44:7001/api/v1/graphs', {
+    config: config,
+    data: data
+  }, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded';
+    }
+  }).then(function(res) {
+    // 成功返回处理
+  }
+  }).catch(function(error) {
+    // 失败返回处理
+  }
+```
+
+`withCredentials`配置开启，使服务器可以通过请求头设置客户端cookie，`xsrfCookieName`和`xsrfHeaderName`属性使发送的请求将cookie中的token，包含在请求头中发送。
 
 服务器收到数据进行存储，将图的版本、源路径和目标路径等标志信息进行MD5处理，得到哈希值作为数据的索引，返回给页面此哈希数据。
 
@@ -1248,7 +1271,17 @@ params: {
 
 * 接收方
 
-在新的页面中打开分享链接，页面初始化过程中会根据url中包含的哈希数据，向服务器获取分享页面的配置和图数据，并自动更新图，此时图上节点位置与分享时的图相同
+在新的页面中打开分享链接，页面初始化过程中会根据url中包含的哈希数据，向服务器获取分享页面的配置和图数据:
+
+```javascript
+if (_t.$route.params.hasOwnProperty('pathMatch')) {
+  _t.get_data(this.$route.params.pathMatch)
+}
+```
+
+获取到数据后会先根据数据中的原有配置更新页面和图配置，将页面得到图数据通过图组件的ex_data进行传递，同时将图配置的ex属性设为true。
+
+图组件初始化后，加载数据时 ex 属性为 true 则使用外部数据，保存的图数据具有节点坐标，在图渲染完成后，会使用数据中的坐标信息更新节点位置，使接收方查看的图与分享方图一致。
 
 ## 2.6. Function List 函数列表
 
