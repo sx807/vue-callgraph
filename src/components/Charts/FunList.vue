@@ -134,7 +134,8 @@ export default {
   },
   data() {
     return {
-      url: '/api/v1/functions',
+      url: 'http://192.168.3.100:7001/api/v1/functions',
+      // url: process.env.AXIOS_BASE_URL + '/api/v1/functions',
       table_id: '',
       options: {},
       height: 500,

@@ -1,7 +1,7 @@
 <template>
   <div class="chart-container">
     <el-row :gutter="20">
-      <el-col :span="4" :offset="2">
+      <el-col :span="4" :offset="1">
         <el-select v-model="config_graph.ver" filterable placeholder="选择内核版本" @change="ver_change">
           <el-option
             v-for="item in ver_list"
@@ -56,6 +56,13 @@
           />
         </el-select>
         <!-- <el-button type="primary" round>生成调用图</el-button> -->
+      </el-col>
+    </el-row>
+    <el-row :gutter="20">
+      <el-col :offset="1">
+<!--        <i class="el-icon-share">-->
+          <span>{{web_url()}}</span>
+<!--        </i>-->
       </el-col>
     </el-row>
     <grid-layout
@@ -122,7 +129,8 @@ export default {
   },
   data() {
     return {
-      url: '/api/v1/',
+      // url: process.env.AXIOS_BASE_URL + '/api/v1',
+      url: 'http://192.168.3.100:7001/api/v1',
       // ver: '',
       ver_list: [],
       path1: '',
@@ -136,6 +144,7 @@ export default {
         w: 1000,
         h: 500
       },
+      g_not_sel: [],
       config_funlist: {
         ver: '',
         sou: '',
@@ -152,32 +161,23 @@ export default {
       //   console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
       // },
       G_layout: 'random',
-      G_layout_options: ['random', 'fruchterman', 'force', 'circular', 'concentric', 'grid']
+      G_layout_options: ['random', 'dagre', 'force', 'circular', 'concentric', 'grid']
     }
   },
   created() {
     const _t = this
+    _t.$EventBus.bus.$on('graph/sel/to_url', _t.set_g_sel)
     _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
     _t.$EventBus.bus.$on('funlist/show', _t.show_funlist)
     _t.$EventBus.bus.$on('code/show', _t.show_code)
-    console.log(this.$route.params)
+    // console.log(process.env)
     _t.get_ver_list()
     if (_t.$route.params.hasOwnProperty('pathMatch')) {
       _t.get_data(this.$route.params.pathMatch)
     }
-    if (_t.$route.query.hasOwnProperty('ver')) {
-      _t.config_graph.ver = _t.$route.query.ver
-      this.get_path_list()
+    if (Object.keys(_t.$route.query).length > 0) {
+      _t.set_by_url(_t.$route.query)
     }
-    if (_t.$route.query.hasOwnProperty('sou')) {
-      _t.config_graph.sou = _t.$route.query.sou
-      _t.path1 = _t.$route.query.sou
-    }
-    if (_t.$route.query.hasOwnProperty('tar')) {
-      _t.config_graph.tar = _t.$route.query.tar
-      _t.path2 = _t.$route.query.tar
-    }
-    // if (_t.$route.query.hasOwnProperty('ver'))
   },
   destroyed() {
     const _t = this
@@ -272,7 +272,7 @@ export default {
 
     get_ver_list() {
       const _t = this
-      const url = _t.url + 'options'
+      const url = _t.url + '/options'
       axios.get(url, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
@@ -289,7 +289,7 @@ export default {
 
     get_path_list() {
       const _t = this
-      const url = _t.url + 'options/' + _t.config_graph.ver
+      const url = _t.url + '/options/' + _t.config_graph.ver
       axios.get(url, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
@@ -336,6 +336,15 @@ export default {
         console.log(error)
       })
     },
+
+    set_g_sel(sel) {
+      const _t = this
+      _t.g_not_sel = []
+      for (const key in sel) {
+        if (!sel[key].value) _t.g_not_sel.push(key)
+      }
+    },
+
     set_web_data(row) {
       const _t = this
       _t.web_data = row.data
@@ -351,6 +360,43 @@ export default {
       _t.config_graph = tmp
       _t.path1 = tmp.sou
       _t.path2 = tmp.tar
+    },
+    set_by_url(query) {
+      const _t = this
+      if (query.ver) {
+        _t.config_graph.ver = _t.$route.query.ver
+        this.get_path_list()
+      }
+      if (query.sou) {
+        _t.config_graph.sou = _t.$route.query.sou
+        _t.path1 = _t.$route.query.sou
+      }
+      if (query.tar) {
+        _t.config_graph.tar = _t.$route.query.tar
+        _t.path2 = _t.$route.query.tar
+      }
+    },
+    web_url() {
+      const _t = this
+      const conf = {}
+      let url = window.location.href.toString().split('?')[0] + '?'
+      if (_t.config_graph.ver !== '') {
+        conf['ver'] = _t.config_graph.ver
+      }
+      if (_t.config_graph.sou !== '') {
+        conf['sou'] = _t.config_graph.sou
+      }
+      if (_t.config_graph.tar !== '') {
+        conf['tar'] = _t.config_graph.tar
+      }
+      if (_t.g_not_sel.length > 0) {
+        conf['not_sel'] = _t.g_not_sel.toString()
+      }
+      // if (Object.keys(conf).length > 0)url += '?'
+      for (const item in conf) {
+        url += item + '=' + conf[item] + '&'
+      }
+      return url.slice(0, -1)
     }
   }
 }

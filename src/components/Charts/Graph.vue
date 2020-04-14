@@ -1,38 +1,10 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="3" :offset="1">
+      <el-col :span="3" :offset="1" v-for="(item,key) in sel" :key="key">
         <el-switch
-          v-model="sel_from_other"
-          active-text="other ->"
-          @change="select_edge()"
-        />
-      </el-col>
-      <el-col :span="3">
-        <el-switch
-          v-model="sel_to_other"
-          active-text="-> other"
-          @change="select_edge()"
-        />
-      </el-col>
-      <el-col :span="3">
-        <el-switch
-          v-model="sel_p_self"
-          active-text="path -> self"
-          @change="select_edge()"
-        />
-      </el-col>
-      <el-col :span="3">
-        <el-switch
-          v-model="sel_s_to_t"
-          active-text="path1 -> path2"
-          @change="select_edge()"
-        />
-      </el-col>
-      <el-col :span="3">
-        <el-switch
-          v-model="sel_t_to_s"
-          active-text="path2 -> path1"
+          v-model="sel[key].value"
+          :active-text="item.label"
           @change="select_edge()"
         />
       </el-col>
@@ -112,7 +84,8 @@ export default {
   },
   data() {
     return {
-      url: '/api/v1/graphs',
+      url: 'http://192.168.3.100:7001/api/v1/graphs',
+      // url: process.env.AXIOS_BASE_URL + '/api/v1/graphs',
       graph: null,
       minimap: null,
       graph_id: '',
@@ -130,11 +103,32 @@ export default {
       },
       graph_w: 1000,
       graph_h: 500,
-      sel_s_to_t: true,
-      sel_t_to_s: true,
-      sel_p_self: true,
-      sel_from_other: true,
-      sel_to_other: true,
+      sel: {
+        s_to_t: {
+          value: true,
+          label: 'sou -> tar'
+        },
+        t_to_s: {
+          value: true,
+          label: 'tar -> sou'
+        },
+        s_to_s: {
+          value: true,
+          label: 'sou -> sou'
+        },
+        t_to_t: {
+          value: true,
+          label: 'tar -> tar'
+        },
+        o_to: {
+          value: true,
+          label: 'other ->'
+        },
+        to_o: {
+          value: true,
+          label: '-> other'
+        }
+      },
       contextMenuStyle: {},
       share_dialog: false,
       share_url: ''
@@ -181,6 +175,13 @@ export default {
     // this.$nextTick(function() {
     //   console.log('next', _t.$refs.graphChart.offsetWidth)
     // })
+    if (_t.$route.query.hasOwnProperty('not_sel')) {
+      const list = _t.$route.query.not_sel.toString().split(',')
+      for (const key of list) {
+        console.log(key)
+        _t.sel[key].value = false
+      }
+    }
   },
   destroyed() {
     const _t = this
@@ -465,42 +466,34 @@ export default {
       _t.graph.setAutoPaint(false)
       _t.graph.getEdges().forEach(function(edge) {
         // console.log(edge.getSource().getModel().type)
-        if (edge.getSource().getModel().type === 2) {
-          // console.log(edge)
-          if (_t.sel_from_other) {
-            _t.graph.showItem(edge)
-          } else {
-            // console.log('hide')
-            _t.graph.hideItem(edge)
-          }
+        let show = true
+        if (edge.getSource().getModel().type === 2 &&
+            edge.getTarget().getModel().type === 2) {
+          show = _t.sel['o_to'].value && _t.sel['to_o'].value
+        } else if (edge.getSource().getModel().type === 2) {
+          show = _t.sel['o_to'].value
         } else if (edge.getTarget().getModel().type === 2) {
-          if (_t.sel_to_other) {
-            _t.graph.showItem(edge)
-          } else {
-            _t.graph.hideItem(edge)
-          }
+          show = _t.sel['to_o'].value
         } else if (edge.getSource().getModel().type === 0 &&
                    edge.getTarget().getModel().type === 1) {
-          if (_t.sel_s_to_t) {
-            _t.graph.showItem(edge)
-          } else {
-            _t.graph.hideItem(edge)
-          }
+          show = _t.sel['s_to_t'].value
         } else if (edge.getSource().getModel().type === 1 &&
-          edge.getTarget().getModel().type === 0) {
-          if (_t.sel_t_to_s) {
-            _t.graph.showItem(edge)
-          } else {
-            _t.graph.hideItem(edge)
-          }
+                   edge.getTarget().getModel().type === 0) {
+          show = _t.sel['t_to_s'].value
+        } else if (edge.getSource().getModel().type === 0 &&
+                   edge.getTarget().getModel().type === 0) {
+          show = _t.sel['s_to_s'].value
+        } else if (edge.getSource().getModel().type === 1 &&
+                   edge.getTarget().getModel().type === 1) {
+          show = _t.sel['t_to_t'].value
+        }
+        if (show) {
+          _t.graph.showItem(edge)
         } else {
-          if (_t.sel_p_self) {
-            _t.graph.showItem(edge)
-          } else {
-            _t.graph.hideItem(edge)
-          }
+          _t.graph.hideItem(edge)
         }
       })
+      _t.$EventBus.bus.$emit('graph/sel/to_url', _t.sel)
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
     },

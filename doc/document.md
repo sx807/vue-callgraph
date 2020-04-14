@@ -46,6 +46,9 @@ npm stop
 |  plugin.js // plugin.js 用于配置需要加载的插件
 ```
 
+框架图
+![框架图](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200414100222.png)
+
 ## 1.3. RESTful API
 
 目标是使用 RESTful 风格的 API 定义，规范化数据获取和处理的流程。
@@ -61,6 +64,9 @@ GET | /posts/:id/edit | edit_post | app.controllers.posts.edit
 POST | /posts | posts | app.controllers.posts.create
 PUT | /posts/:id | post | app.controllers.posts.update
 DELETE | /posts/:id | post | app.controllers.posts.destroy
+
+请求处理图
+![请求处理图](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200414110742.png)
 
 ## 1.4. 获取函数调用图数据的API设计
 
@@ -559,6 +565,9 @@ npm run build:prod
     └─charts
        └─graph.vue        // 调用图页面
 ```
+
+调用图页面组件结构图
+![调用图页面组件结构图](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200414124021.png)
 
 ### 2.4.2. 页面实现功能
 
