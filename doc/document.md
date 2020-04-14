@@ -94,6 +94,9 @@ router.resources('graphs', '/api/v1/graphs', controller.v1.graphs);
 ```
 
 根据快速生成路由配置，使用了以下路由访问：
+
+请求方式|请求路径|对应控制器
+-|-|-|
 GET | /graphs | app.controllers.v1.graphs.index
 GET | /graphs/:id | app.controllers.v1.graphs.show
 POST | /graphs | app.controllers.v1.graphs.create
@@ -480,6 +483,85 @@ show() 函数使用SQL服务中查询 SOLIST 表，通过sql语句的分组方�
 
 ## 1.8. SQL服务
 
+功能描述：使用 egg-mysql 插件对mysql数据库进行读写的服务文件，为其他服务文件，返回所需要的数据。
+
+### 1.8.1. 文件结构
+
+```txt
+/app
+└─service
+   └─sqls.js
+/config
+├─config.default.js
+└─plugin.js
+```
+
+### 1.8.2. 配置 egg-mysql 插件
+
+在项目中安装插件：
+
+```sh
+npm i --save egg-mysql
+```
+
+在插件配置文件中启用插件：
+
+```javascript
+// plugin.js
+module.exports = {
+  mysql: {
+    enable: true,
+    package: 'egg-mysql',
+  }
+  // ···其他插件
+}
+```
+
+在config.default.js文件中配置 MySQL 数据库实例：
+
+```javascript
+//config.default.js
+const userConfig = {
+  // ···其他配置项
+  mysql: {
+    // 单数据库信息配置
+    client: {
+      // host
+      host: '127.0.0.1',
+      // host: '192.168.1.191',
+      // host: 'localhost',
+      // 端口号
+      port: '3306',
+      // 用户名
+      user: 'node',
+      // 密码
+      password: 'node',
+      // 数据库名
+      database: 'callgraph',
+    },
+    // 是否加载到 app 上，默认开启
+    app: true,
+    // 是否加载到 agent 上，默认关闭
+    agent: false,
+  }
+}
+```
+
+此配置下，egg-mysql 插件会在 egg 启动时进行数据库访问测试，无法访问的情况会导致启动失败。
+
+### 1.8.3. 使用插件
+
+插件除提供CRUD语句读取，也支持直接使用sql语句进行查询，服务文件中使用sql实现全部查询，通过拼接的sql字符串，调用插件进行查询，使用await等待mysql插件将数据返回。
+
+```javascript
+  async get_fun_list(table, list, file){
+    const sql = `select ${list} from \`${table}\` where f_dfile='${file}';`
+    // console.log(sql)
+    const result = await this.app.mysql.query(sql);
+    return result
+  }
+```
+
 # 2. Web页面 Vue.js
 
 ## 2.1. 开发
@@ -861,7 +943,7 @@ data() {
 
 图标签放置在布局组件中，由 show_graph() 函数控制是否显示图组件，show_graph() 函数对图的配置参数进行判断，当ver、sou、tar全不为空字符时页面才会渲染此组件，防止图的配置不完整，不能获取到图中数据的情况。
 
-### 调用图的实现
+### 2.5.3. 调用图的实现
 
 图组件由若干筛选开关、G6组件Div标签、右键菜单组件、弹窗组件组成。
 
@@ -895,7 +977,7 @@ initChart() {
 
 根据实现目标对初始化配置进行完善：
 
-#### 插件-缩略图
+#### 2.5.3.1. 插件-缩略图
 
 由G6提供的辅助插件，用于导航大规模图。
 
@@ -923,7 +1005,7 @@ initChart() {
 }
 ```
 
-#### 缩放、画布拖动、节点拖动
+#### 2.5.3.2. 缩放、画布拖动、节点拖动
 
 此类为G6提供的属性，需要在配置中启用：
 
@@ -945,7 +1027,7 @@ initChart() {
 }
 ```
 
-#### 详细信息气泡提示框
+#### 2.5.3.3. 详细信息气泡提示框
 
 G6提供的提示框功能，能够自定义提示框显示内容，配置如下：
 
@@ -976,7 +1058,7 @@ _t.graph = new G6.Graph({
 
 在提示框的 formatText属性配置中，读取当前节点的数据，显示提示框内容。
 
-#### 鼠标覆盖高亮
+#### 2.5.3.4. 鼠标覆盖高亮
 
 鼠标覆盖高亮，需要配置节点和边的状态属性及不同状态下节点和边的样式：
 
@@ -1086,7 +1168,7 @@ clearAllStats() {
 },
 ```
 
-#### 其他配置
+#### 2.5.3.5. 其他配置
 
 还有一些配置如节点样式，边属性等，和绑定鼠标右键事件来显示右键菜单。这里只说明图中的事件绑定，下文有对右键菜单的详细说明。
 
@@ -1119,7 +1201,7 @@ initChart() {
 }
 ```
 
-#### 2.5.2.1. 筛选查看
+#### 2.5.3.6. 筛选查看
 
 通过开关切换显示不同类型的边，切换类别为
 
@@ -1130,7 +1212,7 @@ initChart() {
 5. 源路径节点 到 源路径节点
 6. 目标路径节点 到 目标路径节点
 
-#### 2.5.2.2. 右键菜单
+#### 2.5.3.7. 右键菜单
 
 组件文件位置为: `/components/Charts/ContexMenu.vue`
 
@@ -1205,7 +1287,7 @@ doHide() {
 3. 显示函数调用列表，将列表获取所需的配置数据通过事件传递；
 4. 跳转源码页面，通过事件调用图页面函数进行新页面的跳转。
 
-#### 2.5.2.3. 动态加载部分更新数据
+#### 2.5.3.8. 动态加载部分更新数据
 
 实现动态更新图中节点数据，将所选节点，更新为其下级路径内容
 
@@ -1231,7 +1313,7 @@ params: {
 
 得到请求返回的数据，将得到数据和现有数据合并，使用`graph.data(data)`函数，使用合并后的数据渲染调用图，实现增量更新拓展节点。
 
-#### 2.5.2.4. 返回上一个图
+#### 2.5.3.9. 返回上一个图
 
 调用图组件创建后绑定事件：`_t.$EventBus.bus.$on('graph/back', _t.back_graph)`
 
@@ -1239,7 +1321,7 @@ params: {
 
 通过对节点右键菜单中的`后退`所触发的`graph/back`事件，`back_graph()`函数会将使用备份的数据更新图数据，由于图已存在布局方式的属性，无法直接读取数据中的x、y属性来绘制节点，而是依据布局方式进行布局。因此恢复图数据后，根据备份数据中的坐标，使用`graph.updateItem(item, node)`逐个更新图上节点位置，使节点恢复为备份数据相同状态，保持与备份图的一致性。
 
-#### 2.5.2.5. 分享图
+#### 2.5.3.10. 分享图
 
 调用图组件创建后绑定事件：`_t.$EventBus.bus.$on('graph/post', _t.save_graph)`
 

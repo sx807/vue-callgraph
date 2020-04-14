@@ -61,7 +61,7 @@
     <el-row :gutter="20">
       <el-col :offset="1">
 <!--        <i class="el-icon-share">-->
-          <span>{{web_url()}}</span>
+        <span>{{ web_url() }}</span>
 <!--        </i>-->
       </el-col>
     </el-row>
@@ -90,7 +90,7 @@
         @resized="resizedGraphEvent"
       >
 <!--        <i class="el-icon-delete"></i>-->
-        <Graph :layout="G_layout" :config="config_graph" :ex_data="web_data"/>
+        <Graph :layout="G_layout" :config="config_graph" :ex_data="web_data" />
       </grid-item>
       <grid-item
         v-show="funlist_show"
@@ -191,7 +191,7 @@ export default {
     // const _t = this
   },
   methods: {
-    ver_change(item) {
+    ver_change() {
       this.get_path_list()
     },
     layout_change() {
@@ -235,21 +235,18 @@ export default {
       // this.$EventBus.bus.$emit('graph/path')
     },
     show_graph() {
-      if (this.config_graph.ver !== '' && this.config_graph.sou !== '' && this.config_graph.tar !== '') {
-        return true
-      } else return false
+      return this.config_graph.ver !== '' && this.config_graph.sou !== '' && this.config_graph.tar !== ''
     },
 
     show_funlist(item) {
       const _t = this
       console.log('showlist', item)
       _t.funlist_show = true
-      const tmp = {
+      _t.config_funlist = {
         ver: _t.config_graph.ver,
         sou: item.source,
         tar: item.target
       }
-      _t.config_funlist = tmp
     },
 
     show_code(path, line) {

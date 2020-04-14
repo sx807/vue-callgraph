@@ -6,8 +6,8 @@
     :default-sort="{prop: 's_fun', order: 'descending'}"
     max-height="500"
   >
-  <!--    height="500"-->
-  <!--    max-height="500"-->
+    <!--    height="500"-->
+    <!--    max-height="500"-->
     <el-table-column
       type="index"
       width="50"
@@ -22,7 +22,7 @@
       label="所在文件"
     >
       <template slot-scope="scope">
-        <el-button @click="handleClick(scope.row, 's_file', 0)" type="text" size="small">
+        <el-button type="text" size="small" @click="handleClick(scope.row, 's_file', 0)">
           {{ scope.row.s_file }}
         </el-button>
       </template>
@@ -33,9 +33,9 @@
     >
       <template slot-scope="scope">
         <el-button
-          @click="handleClick(scope.row, 's_line', scope.row.s_line)"
           type="text"
           size="small"
+          @click="handleClick(scope.row, 's_line', scope.row.s_line)"
         >
           {{ scope.row.s_line }}
         </el-button>
@@ -51,11 +51,11 @@
     >
       <template slot-scope="scope">
         <el-button
-          @click="handleClick(scope.row, 'call', scope.row.call_line)"
-          type="text"
-          size="small"
           v-for="item in scope.row.call_line"
           :key="item"
+          type="text"
+          size="small"
+          @click="handleClick(scope.row, 'call', scope.row.call_line)"
         >
           {{ item }}
         </el-button>
@@ -71,9 +71,9 @@
     >
       <template slot-scope="scope">
         <el-button
-          @click="handleClick(scope.row, 't_file', 0)"
           type="text"
           size="small"
+          @click="handleClick(scope.row, 't_file', 0)"
         >
           {{ scope.row.t_file }}
         </el-button>
@@ -85,9 +85,9 @@
     >
       <template slot-scope="scope">
         <el-button
-          @click="handleClick(scope.row, 't_line', scope.row.t_line)"
           type="text"
           size="small"
+          @click="handleClick(scope.row, 't_line', scope.row.t_line)"
         >
           {{ scope.row.t_line }}
         </el-button>
@@ -118,6 +118,19 @@ export default {
       }
     }
   },
+  data() {
+    return {
+      url: 'http://192.168.3.100:7001/api/v1/functions',
+      // url: process.env.AXIOS_BASE_URL + '/api/v1/functions',
+      table_id: '',
+      options: {},
+      height: 500,
+      loading: false,
+      data: {
+        list: []
+      }
+    }
+  },
   watch: {
     config: {
       handler(newValue) {
@@ -130,19 +143,6 @@ export default {
         // }
       },
       deep: true
-    }
-  },
-  data() {
-    return {
-      url: 'http://192.168.3.100:7001/api/v1/functions',
-      // url: process.env.AXIOS_BASE_URL + '/api/v1/functions',
-      table_id: '',
-      options: {},
-      height: 500,
-      loading: false,
-      data: {
-        list: []
-      }
     }
   },
   methods: {
