@@ -63,15 +63,22 @@ export default {
       type: String,
       default: 'random'
     },
+    size: {
+      type: Object,
+      default: function() {
+        return {
+          w: 1000,
+          h: 500
+        }
+      }
+    },
     config: {
       type: Object,
       default: function() {
         return {
           var: '',
           sou: '',
-          tar: '',
-          w: 1000,
-          h: 500
+          tar: ''
         }
       }
     },
@@ -84,12 +91,15 @@ export default {
   },
   data() {
     return {
-      url: 'http://192.168.3.100:7001/api/v1/graphs',
-      // url: process.env.AXIOS_BASE_URL + '/api/v1/graphs',
+      // url: 'http://192.168.3.100:7001/api/v1/graphs',
+      url: process.env.VUE_APP_BASE_API + '/graphs',
       graph: null,
       minimap: null,
       graph_id: '',
-      options: {},
+      options: {
+        expanded: ''
+      },
+      graph_config: {},
       backup_data: {
         id: '',
         layout: '',
@@ -106,27 +116,27 @@ export default {
       sel: {
         s_to_t: {
           value: true,
-          label: 'sou -> tar'
+          label: 'sou->tar'
         },
         t_to_s: {
           value: true,
-          label: 'tar -> sou'
+          label: 'tar->sou'
         },
         s_to_s: {
           value: true,
-          label: 'sou -> sou'
+          label: 'sou->sou'
         },
         t_to_t: {
           value: true,
-          label: 'tar -> tar'
+          label: 'tar->tar'
         },
         o_to: {
           value: true,
-          label: 'other ->'
+          label: 'other->'
         },
         to_o: {
           value: true,
-          label: '-> other'
+          label: '->other'
         }
       },
       contextMenuStyle: {},
@@ -135,28 +145,25 @@ export default {
     }
   },
   watch: {
+    size: {
+      handler(newValue, oldValue) {
+        const _t = this
+        _t.graph_h = newValue.h
+        _t.graph_w = newValue.w
+        _t.graph.changeSize(_t.graph_w, _t.graph_h)
+        _t.graph.fitView()
+      },
+      deep: true
+    },
     config: {
       handler(newValue, oldValue) {
         const _t = this
-        console.log('watch config', newValue)
-        if (newValue.h !== _t.graph_h || newValue.w !== _t.graph_w) {
-          _t.graph_h = newValue.h
-          _t.graph_w = newValue.w
-          // _t.graph.set('width', Number(newValue.w))
-          // _t.graph.set('height', Number(newValue.h))
-          _t.graph.changeSize(_t.graph_w, _t.graph_h)
-          _t.graph.fitView()
-          // _t.graph.destroy()
-          // _t.initChart()
-          // _t.graph.data(_t.data)
-          // _t.graph.render()
-          // console.log('mounted', _t.$refs.graphChart.offsetWidth)
-          console.log(_t.graph.get('width'), _t.graph.get('height'))
-        } else {
+        // console.log('graph config change', _t.graph_config)
+        if (newValue.data_source === 'server') {
           _t.backup()
+          _t.graph_config = JSON.parse(JSON.stringify(newValue))
           _t.get_data('new')
         }
-        _t.graph_config = newValue
       },
       deep: true
     },
@@ -175,12 +182,8 @@ export default {
     // this.$nextTick(function() {
     //   console.log('next', _t.$refs.graphChart.offsetWidth)
     // })
-    if (_t.$route.query.hasOwnProperty('not_sel')) {
-      const list = _t.$route.query.not_sel.toString().split(',')
-      for (const key of list) {
-        console.log(key)
-        _t.sel[key].value = false
-      }
+    if (_t.$route.query.hasOwnProperty('sel_f')) {
+      _t.sel_load(_t.$route.query.sel_f)
     }
   },
   destroyed() {
@@ -195,14 +198,15 @@ export default {
   mounted() {
     const _t = this
     // console.log('mounted', _t.$refs.graphChart.offsetWidth)
-    // _t.graph_w = _t.$refs.graphChart.offsetWidth
-    _t.graph_config = _t.config
+    _t.graph_w = _t.$refs.graphChart.offsetWidth
+    _t.graph_config = JSON.parse(JSON.stringify(_t.config))
     _t.initChart()
-    // console.log('mounted', _t.config, _t.ex_data)
+    // console.log('mounted', _t.config, _t.graph_config)
     // console.log('mounted', _t.$refs.graphChart.offsetHeight, _t.$refs.graphChart.offsetWidth)
-    if (_t.config.ex) {
+    if (_t.config.data_source === 'external') {
       _t.get_data('external')
     } else {
+      _t.options.expanded = ''
       _t.get_data('new')
     }
   },
@@ -218,7 +222,6 @@ export default {
       })
       _t.graph = new G6.Graph({
         container: 'graphChart',
-        graph_config: {},
         width: _t.graph_w,
         height: _t.graph_h,
         fitView: true,
@@ -243,7 +246,8 @@ export default {
             {
               type: 'edge-tooltip',
               formatText(model) {
-                return '调用次数：' + model.sourceWeight + '<br/>来源：' + model.source + '<br/>去向：' + model.target              }
+                return '调用次数：' + model.sourceWeight + '<br/>来源：' + model.source + '<br/>去向：' + model.target
+              }
             }
           ]
         },
@@ -373,34 +377,61 @@ export default {
         this.options[key] = val[key]
       }
     },
+    check_status() {
+      const _t = this
+      let ex_nodes = 0
+      if (_t.options.expanded !== '') {
+        ex_nodes = _t.options.expanded.split(',').length
+      }
+      // if (ex_nodes >= 1 && ex_nodes < 3) {
+      //   this.$message.warning('多个展开节点 不会显示展开点之间的边！')
+      // }
+      if (_t.options.hasOwnProperty('expand') &&
+        _t.options.expand.lastIndexOf('.') > 0 &&
+        _t.options.expand.lastIndexOf('.') < _t.options.expand.length - 2) {
+        this.$message.error('错误 函数节点不可展开！')
+        return false
+      }
+      if (ex_nodes >= 3) {
+        this.$message.error('错误 展开节点达到上限(3)！')
+        return false
+      }
+      return true
+    },
     get_data(type) {
       const _t = this
+      if (!_t.check_status()) return
+      // _t.backup()
+      console.log('get_data', _t.graph_config)
       const loadingInstance = Loading.service({ target: '#graphChart' })
       const config = {
-        version: _t.config.ver,
-        source: _t.config.sou,
-        target: _t.config.tar
+        version: _t.graph_config.ver,
+        source: _t.graph_config.sou,
+        target: _t.graph_config.tar
       }
       for (const key in _t.options) {
-        config[key] = _t.options[key]
+        if (_t.options[key] !== '') {
+          config[key] = _t.options[key]
+        }
       }
       if (type === 'external') {
-        const tmp = _t.handle_data(_t.ex_data)
-        _t.data = JSON.parse(JSON.stringify(tmp))
+        const tmp = JSON.parse(JSON.stringify(_t.handle_data(_t.ex_data)))
+        // console.log('tmp', tmp)
+        _t.graph_id = tmp.id
+        _t.data.nodes = tmp.nodes
+        _t.data.edges = tmp.edges
         _t.graph.setAutoPaint(false)
-        _t.graph.changeData({
-          // groups: _t.data.groups,
+        _t.graph.data({
           nodes: _t.data.nodes,
           edges: _t.data.edges
         })
-        for (const node of tmp.nodes) {
-          // console.log(node)
-          // _t.graph.add('node', node)
-          // _t.graph.findById(node.id).updatePosition({ x: node.x, y: node.y })
+        _t.graph.render()
+        for (const node of _t.ex_data.nodes) {
           _t.graph.updateItem(node.id, { x: node.x, y: node.y })
         }
         // _t.select_edge()
-        _t.clearAllStats()
+        _t.sel_load(tmp.sel)
+        // _t.clearAllStats()
         _t.graph.paint()
         _t.graph.setAutoPaint(true)
         _t.graph.fitView()
@@ -419,27 +450,36 @@ export default {
           if (res.data.nodes.length > 0) {
             _t.graph_id = res.data.id
             const tmp = _t.handle_data(res.data)
+            const expanded = []
+            for (const ex of _t.options.expanded.split(',')) {
+              if (ex !== '') expanded.push(ex)
+            }
             if (type === 'new') {
               _t.data = tmp
             }
             if (type === 'add') {
               _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
               _t.data.edges = _t.data.edges.concat(tmp.edges)
-              console.log(_t.data.nodes)
+              // console.log(_t.data.nodes)
+              expanded.push(_t.options.expand)
             }
             _t.graph.data({
               // groups: _t.data.groups,
               nodes: _t.data.nodes,
               edges: _t.data.edges
             })
-            // console.log(_t.graph.getNodes().length)
-            _t.options = {}
+            // console.log(expanded)
+            _t.options = {
+              expanded: expanded.join()
+            }
             _t.graph.render()
             _t.graph.fitView()
             _t.select_edge()
           }
           loadingInstance.close()
         }).catch(function(error) {
+          loadingInstance.close()
+          this.$message.error(error)
           console.log(error)
         })
       }
@@ -464,27 +504,26 @@ export default {
     select_edge() {
       const _t = this
       _t.graph.setAutoPaint(false)
+      // _t.clearAllStats()
       _t.graph.getEdges().forEach(function(edge) {
         // console.log(edge.getSource().getModel().type)
         let show = true
-        if (edge.getSource().getModel().type === 2 &&
-            edge.getTarget().getModel().type === 2) {
+        const sou_type = edge.getSource().getModel().type
+        const tar_type = edge.getTarget().getModel().type
+        if (sou_type === 2 && tar_type === 2) {
           show = _t.sel['o_to'].value && _t.sel['to_o'].value
-        } else if (edge.getSource().getModel().type === 2) {
+        } else if (sou_type === 2) {
           show = _t.sel['o_to'].value
-        } else if (edge.getTarget().getModel().type === 2) {
+        } else if (tar_type === 2) {
           show = _t.sel['to_o'].value
-        } else if (edge.getSource().getModel().type === 0 &&
-                   edge.getTarget().getModel().type === 1) {
+        } else if (sou_type === 0 && tar_type === 1) {
           show = _t.sel['s_to_t'].value
-        } else if (edge.getSource().getModel().type === 1 &&
-                   edge.getTarget().getModel().type === 0) {
+        } else if (sou_type === 1 && tar_type === 0) {
           show = _t.sel['t_to_s'].value
-        } else if (edge.getSource().getModel().type === 0 &&
-                   edge.getTarget().getModel().type === 0) {
+        } else if (sou_type === 0 &&
+          tar_type === 0) {
           show = _t.sel['s_to_s'].value
-        } else if (edge.getSource().getModel().type === 1 &&
-                   edge.getTarget().getModel().type === 1) {
+        } else if (sou_type === 1 && tar_type === 1) {
           show = _t.sel['t_to_t'].value
         }
         if (show) {
@@ -493,56 +532,99 @@ export default {
           _t.graph.hideItem(edge)
         }
       })
-      _t.$EventBus.bus.$emit('graph/sel/to_url', _t.sel)
+      _t.$EventBus.bus.$emit('graph/sel/to_url', _t.sel_save())
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
+    },
+    sel_save() {
+      const _t = this
+      const tmp = []
+      for (const key in _t.sel) {
+        if (!_t.sel[key].value) tmp.push(key)
+      }
+      return tmp.toString()
+    },
+    sel_load(str) {
+      const _t = this
+      if (str.length > 0) {
+        const list = str.toString().split(',')
+        if (list.length > 0) {
+          for (const key of list) {
+            // console.log(key)
+            _t.sel[key].value = false
+          }
+          _t.select_edge()
+        }
+      }
     },
     backup() {
       const _t = this
       _t.backup_data.id = _t.graph_id
       _t.backup_data.layout = _t.layout
       _t.backup_data.config = _t.graph_config
-      _t.backup_data.data = _t.graph.save()
-      // console.log(_t.backup_data.data)
+      _t.backup_data.sel = _t.sel_save()
+      _t.backup_data.expanded = _t.options.expanded
+      const row = _t.graph.save()
+      _t.backup_data.data = {
+        nodes: [],
+        edges: []
+      }
+      for (const node of row.nodes) {
+        const tmp = {}
+        tmp.id = node.id
+        tmp.type = node.type
+        tmp.x = Math.floor(node.x)
+        tmp.y = Math.floor(node.y)
+        _t.backup_data.data.nodes.push(tmp)
+      }
+      for (const edge of row.edges) {
+        const tmp = {}
+        tmp.source = edge.source
+        tmp.target = edge.target
+        tmp.sourceWeight = edge.sourceWeight
+        tmp.type = edge.type
+        _t.backup_data.data.edges.push(tmp)
+      }
+      console.log(_t.backup_data)
     },
     back_graph(item) {
       const _t = this
       if (Object.keys(_t.backup_data.data).length > 0) {
         _t.graph.setAutoPaint(false)
-        // _t.graph.clear()
-        _t.graph.changeData({
-          // groups: _t.data.groups,
-          nodes: _t.backup_data.data.nodes,
-          edges: _t.backup_data.data.edges
+        // graph id
+        _t.graph_id = _t.backup_data.id
+        // config
+        _t.graph_config = _t.backup_data.config
+        _t.options.expanded = _t.backup_data.expanded
+        // data
+        _t.data = JSON.parse(JSON.stringify(_t.handle_data(_t.backup_data.data)))
+        _t.graph.setAutoPaint(false)
+        _t.graph.data({
+          nodes: _t.data.nodes,
+          edges: _t.data.edges
         })
-        const nodes = _t.backup_data.data.nodes
-        for (const node of nodes) {
-          // console.log(node)
-          // _t.graph.add('node', node)
-          const item = _t.graph.findById(node.id)
-          _t.graph.updateItem(item, node)
+        _t.graph.render()
+        for (const node of _t.backup_data.data.nodes) {
+          _t.graph.updateItem(node.id, { x: node.x, y: node.y })
         }
-        // _t.graph.refresh()
-        // _t.select_edge()
-        _t.clearAllStats()
+        // sel edges
+        _t.sel_load(_t.backup_data.sel)
         _t.graph.paint()
+        _t.graph.fitView()
         _t.graph.setAutoPaint(true)
+        console.log('back_graph', _t.graph_config)
+        _t.$EventBus.bus.$emit('graph/path/change', {
+          sou: _t.backup_data.config.sou,
+          tar: _t.backup_data.config.tar,
+          data_source: 'backup'
+        })
       }
     },
     save_graph() {
       const _t = this
-      // console.log(Cookies.get('csrfToken'))
-      // const loadingInstance = Loading.service({ target: '#graphChart' })
-      const config = {
-        version: _t.config.ver,
-        source: _t.config.sou,
-        target: _t.config.tar
-      }
-      // axios.defaults.withCredentials = true
-      // axios.defaults.xsrfCookieName = 'csrfToken' // default: XSRF-TOKEN
-      // axios.defaults.xsrfHeaderName = 'x-csrf-token' // default: X-XSRF-TOKEN
       const row = _t.graph.save()
       const data = {
+        sel: _t.sel_save(),
         nodes: [],
         edges: []
       }
@@ -563,8 +645,11 @@ export default {
         data.edges.push(tmp)
       }
       axios.post(_t.url, {
-        // axios.get('./public/data.json', {
-        config: config,
+        config: {
+          version: _t.graph_config.ver,
+          source: _t.graph_config.sou,
+          target: _t.graph_config.tar
+        },
         data: data
       }, {
         headers: {
@@ -573,8 +658,8 @@ export default {
           // 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
-        console.log(res.data)
-        _t.share_url = window.location.href + '/' + res.data.share_key
+        // console.log(res.data)
+        _t.share_url = window.location.href.toString().split('#')[0] + '#/charts/graph/' + res.data.share_key
         _t.share_dialog = true
       }).catch(function(error) {
         console.log(error)
@@ -591,7 +676,7 @@ export default {
       const tmp = []
       const index = _t.data.nodes.findIndex((node) => node.id === nodeId)
       _t.data.nodes.splice(index, 1)
-      console.log(_t.data.nodes)
+      // console.log(_t.data.nodes)
       for (const edge of _t.data.edges) {
         if (edge.source !== nodeId && edge.target !== nodeId) {
           tmp.push(edge)
@@ -607,7 +692,7 @@ export default {
     },
     updateLayout(layout) {
       const _t = this
-      console.log(_t.layout)
+      // console.log(_t.layout)
       _t.graph.updateLayout({
         width: 1200,
         height: 600,
@@ -616,6 +701,7 @@ export default {
         nodeSize: 50,
         linkDistance: 50
       })
+      _t.graph.fitView()
     },
     share_copy(url) {
       this.$alert(url, '分享链接', {

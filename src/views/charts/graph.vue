@@ -90,10 +90,10 @@
         @resized="resizedGraphEvent"
       >
 <!--        <i class="el-icon-delete"></i>-->
-        <Graph :layout="G_layout" :config="config_graph" :ex_data="web_data" />
+        <Graph :layout="G_layout" :config="config_graph" :size="size_graph" :ex_data="web_data" />
       </grid-item>
       <grid-item
-        v-show="funlist_show"
+        v-show="show_funlist()"
         :x="web_layout[1].x"
         :y="web_layout[1].y"
         :w="web_layout[1].w"
@@ -104,7 +104,7 @@
         :max-h="5"
         :i="web_layout[1].i"
       >
-        <FunList :config="config_funlist" />
+        <FunList :config="config_funlist"/>
       </grid-item>
     </grid-layout>
   </div>
@@ -129,8 +129,8 @@ export default {
   },
   data() {
     return {
-      // url: process.env.AXIOS_BASE_URL + '/api/v1',
-      url: 'http://192.168.3.100:7001/api/v1',
+      url: process.env.VUE_APP_BASE_API,
+      // url: 'http://192.168.3.100:7001/api/v1',
       // ver: '',
       ver_list: [],
       path1: '',
@@ -140,18 +140,18 @@ export default {
         ver: '',
         sou: '',
         tar: '',
-        ex: false,
+        data_source: 'server'
+      },
+      size_graph: {
         w: 1000,
         h: 500
       },
-      g_not_sel: [],
+      g_sel_f: '',
       config_funlist: {
         ver: '',
         sou: '',
         tar: ''
       },
-      funlist_show: false,
-      show: false,
       path_list: [],
       web_layout: [
         { 'x': 0, 'y': 0, 'w': 12, 'h': 5, 'i': '0' },
@@ -168,7 +168,7 @@ export default {
     const _t = this
     _t.$EventBus.bus.$on('graph/sel/to_url', _t.set_g_sel)
     _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
-    _t.$EventBus.bus.$on('funlist/show', _t.show_funlist)
+    _t.$EventBus.bus.$on('funlist/show', _t.funlist_conf)
     _t.$EventBus.bus.$on('code/show', _t.show_code)
     // console.log(process.env)
     _t.get_ver_list()
@@ -196,7 +196,7 @@ export default {
     },
     layout_change() {
       const _t = this
-      console.log(_t.G_layout)
+      // console.log(_t.G_layout)
       // this.$EventBus.bus.$emit('graph/layout', _t.layout)
     },
     setPath(val) {
@@ -205,19 +205,34 @@ export default {
       if (val.disable) {
         return
       }
+      if (val.data_source) {
+        // console.log('val', val)
+        _t.config_graph.data_source = val.data_source
+        _t.path1 = val.sou
+        _t.path2 = val.tar
+        _t.config_graph.sou = val.sou
+        _t.config_graph.tar = val.tar
+        return
+      }
       if (val.sou) {
         // console.log('sou')
-        this.path1 = val.sou
+        _t.path1 = val.sou
       }
       if (val.tar) {
         // console.log('tar')
-        this.path2 = val.tar
+        _t.path2 = val.tar
       }
       _t.path_change('both')
     },
     path_change(item) {
       // console.log(item)
-      const tmp = this.config_graph
+      const _t = this
+      const tmp = {
+        ver: _t.config_graph.ver,
+        sou: _t.config_graph.sou,
+        tar: _t.config_graph.tar,
+        data_source: 'server'
+      }
       switch (item) {
         case 'sou':
           tmp.sou = this.path1
@@ -238,10 +253,12 @@ export default {
       return this.config_graph.ver !== '' && this.config_graph.sou !== '' && this.config_graph.tar !== ''
     },
 
-    show_funlist(item) {
+    show_funlist() {
+      return this.config_funlist.ver !== '' && this.config_funlist.sou !== '' && this.config_funlist.tar !== ''
+    },
+    funlist_conf(item) {
       const _t = this
-      console.log('showlist', item)
-      _t.funlist_show = true
+      // console.log('showlist', item)
       _t.config_funlist = {
         ver: _t.config_graph.ver,
         sou: item.source,
@@ -251,7 +268,7 @@ export default {
 
     show_code(path, line) {
       const _t = this
-      console.log('showcode', path, line)
+      // console.log('showcode', path, line)
       const ver = _t.ver_list[_t.ver_list.findIndex((item) => item.value === _t.config_graph.ver)]
       // https://elixir.bootlin.com/linux/v4.18.15/source/include/linux/list.h#L627
       let url = 'https://elixir.bootlin.com/linux/v' + ver.label
@@ -275,7 +292,7 @@ export default {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
-        console.log(res.data)
+        // console.log(res.data)
         if (res.data.length > 0) {
           _t.ver_list = res.data
         }
@@ -292,7 +309,7 @@ export default {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
-        console.log(res.data)
+        // console.log(res.data)
         if (res.data.length > 0) {
           _t.path_list = res.data.map(item => {
             return { value: item }
@@ -310,20 +327,23 @@ export default {
     // },
     resizedGraphEvent(i, newH, newW, newHPx, newWPx) {
       // console.log('RESIZE i=' + i + ', H=' + newH + ', W=' + newW + ', H(px)=' + newHPx + ', W(px)=' + newWPx)
-      this.config_graph.h = Math.floor(newHPx - 40)
-      this.config_graph.w = Math.floor(newWPx)
+      const tmp = {
+        h: Math.floor(newHPx - 40),
+        w: Math.floor(newWPx)
+      }
+      this.size_graph = tmp
     },
 
     get_data(key) {
       const _t = this
       // axios.defaults.withCredentials = true
-      const url = 'http://192.168.3.44:7001/api/v1/graphs/' + key
+      const url = _t.url + '/graphs/' + key
       axios.get(url, { // 还可以直接把参数拼接在url后边
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
-        console.log(res.data)
+        // console.log(res.data)
         if (Object.keys(res.data).length > 0) {
           // _t.web_data = res.data
           // console.log('get', res.data)
@@ -336,47 +356,55 @@ export default {
 
     set_g_sel(sel) {
       const _t = this
-      _t.g_not_sel = []
-      for (const key in sel) {
-        if (!sel[key].value) _t.g_not_sel.push(key)
-      }
+      _t.g_sel_f = sel
     },
 
     set_web_data(row) {
       const _t = this
       _t.web_data = row.data
-      console.log('set', row.data)
+      _t.web_data['id'] = row.id
+      // console.log('set', row.data)
+      // set size
+      // _t.size_graph.h = row.size.h
+      // _t.size_graph.w = row.size.w
       // set config
       const tmp = {}
       tmp.ver = row.config.version
       tmp.sou = row.config.source
       tmp.tar = row.config.target
-      tmp.ex = true
-      tmp.w = _t.config_graph.w
-      tmp.h = _t.config_graph.h
+      tmp.data_source = 'external'
       _t.config_graph = tmp
       _t.path1 = tmp.sou
       _t.path2 = tmp.tar
+      _t.get_path_list()
     },
     set_by_url(query) {
       const _t = this
       if (query.ver) {
-        _t.config_graph.ver = _t.$route.query.ver
-        this.get_path_list()
+        _t.config_graph.ver = query.ver
+        _t.get_path_list()
       }
       if (query.sou) {
-        _t.config_graph.sou = _t.$route.query.sou
-        _t.path1 = _t.$route.query.sou
+        _t.path1 = _t.config_graph.sou = query.sou
       }
       if (query.tar) {
-        _t.config_graph.tar = _t.$route.query.tar
-        _t.path2 = _t.$route.query.tar
+        _t.path2 = _t.config_graph.tar = query.tar
+      }
+      if (query.table_sou && query.table_tar) {
+        _t.funlist_conf({
+          source: query.table_sou,
+          target: query.table_tar
+        })
       }
     },
     web_url() {
       const _t = this
       const conf = {}
-      let url = window.location.href.toString().split('?')[0] + '?'
+      let url = window.location.href.toString().split('?')[0]
+      if (_t.$route.params.hasOwnProperty('pathMatch')) {
+        url = url.slice(0, url.lastIndexOf('/'))
+      }
+      url += '?'
       if (_t.config_graph.ver !== '') {
         conf['ver'] = _t.config_graph.ver
       }
@@ -386,8 +414,14 @@ export default {
       if (_t.config_graph.tar !== '') {
         conf['tar'] = _t.config_graph.tar
       }
-      if (_t.g_not_sel.length > 0) {
-        conf['not_sel'] = _t.g_not_sel.toString()
+      if (_t.g_sel_f !== '') {
+        conf['sel_f'] = _t.g_sel_f
+      }
+      if (_t.config_funlist.sou !== '') {
+        conf['table_sou'] = _t.config_funlist.sou
+      }
+      if (_t.config_funlist.tar !== '') {
+        conf['table_tar'] = _t.config_funlist.tar
       }
       // if (Object.keys(conf).length > 0)url += '?'
       for (const item in conf) {
