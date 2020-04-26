@@ -60,9 +60,7 @@
     </el-row>
     <el-row :gutter="20">
       <el-col :offset="1">
-<!--        <i class="el-icon-share">-->
         <span>{{ web_url() }}</span>
-<!--        </i>-->
       </el-col>
     </el-row>
     <grid-layout
@@ -89,7 +87,7 @@
         :is-draggable="false"
         @resized="resizedGraphEvent"
       >
-<!--        <i class="el-icon-delete"></i>-->
+        <!--        <i class="el-icon-delete"></i>-->
         <Graph :layout="G_layout" :config="config_graph" :size="size_graph" :ex_data="web_data" />
       </grid-item>
       <grid-item
@@ -104,7 +102,7 @@
         :max-h="5"
         :i="web_layout[1].i"
       >
-        <FunList :config="config_funlist"/>
+        <FunList :config="config_funlist" />
       </grid-item>
     </grid-layout>
   </div>
@@ -195,7 +193,7 @@ export default {
       this.get_path_list()
     },
     layout_change() {
-      const _t = this
+      // const _t = this
       // console.log(_t.G_layout)
       // this.$EventBus.bus.$emit('graph/layout', _t.layout)
     },
