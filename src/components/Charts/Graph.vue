@@ -160,6 +160,7 @@ export default {
         const _t = this
         // console.log('graph config change', _t.graph_config)
         if (newValue.data_source === 'server') {
+          _t.options.expanded = ''
           _t.backup()
           _t.graph_config = JSON.parse(JSON.stringify(newValue))
           _t.get_data('new')
@@ -390,10 +391,18 @@ export default {
         _t.options.expand.lastIndexOf('.') > 0 &&
         _t.options.expand.lastIndexOf('.') < _t.options.expand.length - 2) {
         this.$message.error('错误 函数节点不可展开！')
+        const tmp = _t.options.expanded
+        _t.options = {
+          expanded: tmp
+        }
         return false
       }
       if (ex_nodes >= 3) {
         this.$message.error('错误 展开节点达到上限(3)！')
+        const tmp = _t.options.expanded
+        _t.options = {
+          expanded: tmp
+        }
         return false
       }
       return true
@@ -480,6 +489,10 @@ export default {
         }).catch(function(error) {
           loadingInstance.close()
           this.$message.error(error)
+          const tmp = _t.options.expanded
+          _t.options = {
+            expanded: tmp
+          }
           console.log(error)
         })
       }

@@ -130,7 +130,7 @@ export default {
           _t.$EventBus.bus.$emit('funlist/show', item.getModel())
           break
         case 'Inside':
-          _t.$EventBus.bus.$emit('graph/options', { per: false })
+          _t.$EventBus.bus.$emit('graph/options', { per: 0 })
         // eslint-disable-next-line no-fallthrough
         case 'Graph':
           path.sou = item.getModel().source
