@@ -51,8 +51,8 @@
     >
       <template slot-scope="scope">
         <el-button
-          v-for="item in scope.row.call_line"
-          :key="item"
+          v-for="(item,i) in scope.row.call_line"
+          :key="i"
           type="text"
           size="small"
           @click="handleClick(scope.row, 'call', scope.row.call_line)"
@@ -120,8 +120,8 @@ export default {
   },
   data() {
     return {
-      url: 'http://192.168.3.100:7001/api/v1/functions',
-      // url: process.env.AXIOS_BASE_URL + '/api/v1/functions',
+      // url: 'http://192.168.3.100:7001/api/v1/functions',
+      url: process.env.VUE_APP_BASE_API + '/functions',
       table_id: '',
       options: {},
       height: 500,
@@ -134,7 +134,7 @@ export default {
   watch: {
     config: {
       handler(newValue) {
-        console.log(newValue)
+        // console.log('fun watch')
         // if (this.height !== newValue.h) {
         //   this.height = newValue.h
         //   console.log(this.height)
@@ -145,9 +145,15 @@ export default {
       deep: true
     }
   },
+  mounted() {
+    this.getdata()
+  },
   methods: {
     getdata() {
       const _t = this
+      if (_t.config.ver === '' && _t.config.sou === '' && _t.config.tar === '') {
+        return
+      }
       _t.loading = true
       const config = {
         version: _t.config.ver,
@@ -163,7 +169,7 @@ export default {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
       }).then(function(res) {
-        console.log(res.data)
+        // console.log(res.data)
         if (res.data.list.length > 0) {
           _t.table_id = res.data.id
           _t.data = res.data
