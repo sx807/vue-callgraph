@@ -410,7 +410,6 @@ export default {
     get_data(type) {
       const _t = this
       if (!_t.check_status()) return
-      // _t.backup()
       console.log('get_data', _t.graph_config)
       const loadingInstance = Loading.service({ target: '#graphChart' })
       const config = {
@@ -467,6 +466,7 @@ export default {
               _t.data = tmp
             }
             if (type === 'add') {
+              _t.backup()
               _t.data.nodes = _t.data.nodes.concat(tmp.nodes)
               _t.data.edges = _t.data.edges.concat(tmp.edges)
               // console.log(_t.data.nodes)
