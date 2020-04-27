@@ -60,10 +60,6 @@ export default {
       ]
       const list_edge = [
         {
-          value: 'Back',
-          label: '后退'
-        },
-        {
           value: 'FunList',
           label: '显示函数列表'
         },
