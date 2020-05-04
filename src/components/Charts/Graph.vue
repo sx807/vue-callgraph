@@ -414,6 +414,7 @@ export default {
       const loadingInstance = Loading.service({ target: '#graphChart' })
       const config = {
         version: _t.graph_config.ver,
+        platform: _t.graph_config.plat,
         source: _t.graph_config.sou,
         target: _t.graph_config.tar
       }
@@ -660,6 +661,7 @@ export default {
       axios.post(_t.url, {
         config: {
           version: _t.graph_config.ver,
+          platform: _t.graph_config.plat,
           source: _t.graph_config.sou,
           target: _t.graph_config.tar
         },

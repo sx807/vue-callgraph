@@ -112,6 +112,7 @@ export default {
       default: function() {
         return {
           var: '',
+          plat: '',
           sou: '',
           tar: ''
         }
@@ -157,6 +158,7 @@ export default {
       _t.loading = true
       const config = {
         version: _t.config.ver,
+        platform: _t.config.plat,
         source: _t.config.sou,
         target: _t.config.tar
       }

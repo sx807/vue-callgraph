@@ -1,7 +1,7 @@
 <template>
   <div class="chart-container">
     <el-row :gutter="20">
-      <el-col :span="4" :offset="1">
+      <el-col :span="3" :offset="1">
         <el-select v-model="config_graph.ver" filterable placeholder="选择内核版本" @change="ver_change">
           <el-option
             v-for="item in ver_list"
@@ -11,7 +11,17 @@
           />
         </el-select>
       </el-col>
-      <el-col :span="4">
+      <el-col :span="2">
+        <el-select v-model="config_graph.plat" placeholder="编译环境" @change="plat_change">
+          <el-option
+            v-for="item in plat_list"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-col>
+      <el-col :span="5">
         <el-select
           v-model="path1"
           filterable
@@ -28,7 +38,7 @@
           />
         </el-select>
       </el-col>
-      <el-col :span="4">
+      <el-col :span="5">
         <el-select
           v-model="path2"
           filterable
@@ -45,8 +55,8 @@
           />
         </el-select>
       </el-col>
-      <el-col :span="9">
-        <label class="radio-label">Layout:  </label>
+      <el-col :span="3">
+<!--        <label class="radio-label">布局:  </label>-->
         <el-select v-model="G_layout" style="width:120px;" @change="layout_change">
           <el-option
             v-for="item in G_layout_options"
@@ -131,11 +141,13 @@ export default {
       // url: 'http://192.168.3.100:7001/api/v1',
       // ver: '',
       ver_list: [],
+      plat_list: [],
       path1: '',
       path2: '',
       web_data: {},
       config_graph: {
         ver: '',
+        plat: '',
         sou: '',
         tar: '',
         data_source: 'server'
@@ -147,6 +159,7 @@ export default {
       g_sel_f: '',
       config_funlist: {
         ver: '',
+        plat: '',
         sou: '',
         tar: ''
       },
@@ -189,8 +202,16 @@ export default {
     // const _t = this
   },
   methods: {
-    ver_change() {
-      this.get_path_list()
+    ver_change(val) {
+      const _t = this
+      console.log('ver ', val, _t.ver_list.findIndex((item) => item.value === val))
+      _t.plat_list = _t.ver_list[_t.ver_list.findIndex((item) => item.value === val)].platform
+      _t.config_graph.plat = _t.plat_list[0].value
+      _t.get_path_list()
+    },
+    plat_change() {
+      const _t = this
+      _t.setPath({ sou: '', tar: '' })
     },
     layout_change() {
       // const _t = this
@@ -227,6 +248,7 @@ export default {
       const _t = this
       const tmp = {
         ver: _t.config_graph.ver,
+        plat: _t.config_graph.plat,
         sou: _t.config_graph.sou,
         tar: _t.config_graph.tar,
         data_source: 'server'
@@ -259,6 +281,7 @@ export default {
       // console.log('showlist', item)
       _t.config_funlist = {
         ver: _t.config_graph.ver,
+        plat: _t.config_graph.plat,
         sou: item.source,
         tar: item.target
       }
@@ -303,6 +326,9 @@ export default {
       const _t = this
       const url = _t.url + '/options/' + _t.config_graph.ver
       axios.get(url, {
+        params: {
+          platform: _t.config_graph.plat
+        },
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
         }
@@ -368,6 +394,7 @@ export default {
       // set config
       const tmp = {}
       tmp.ver = row.config.version
+      tmp.plat = row.config.platform
       tmp.sou = row.config.source
       tmp.tar = row.config.target
       tmp.data_source = 'external'
@@ -380,6 +407,13 @@ export default {
       const _t = this
       if (query.ver) {
         _t.config_graph.ver = query.ver
+        // _t.get_path_list()
+      }
+      if (query.plat) {
+        _t.config_graph.plat = query.plat
+        // _t.get_path_list()
+      }
+      if (query.ver && query.plat) {
         _t.get_path_list()
       }
       if (query.sou) {
@@ -405,6 +439,9 @@ export default {
       url += '?'
       if (_t.config_graph.ver !== '') {
         conf['ver'] = _t.config_graph.ver
+      }
+      if (_t.config_graph.plat !== '') {
+        conf['plat'] = _t.config_graph.plat
       }
       if (_t.config_graph.sou !== '') {
         conf['sou'] = _t.config_graph.sou
