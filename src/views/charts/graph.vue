@@ -55,8 +55,10 @@
           />
         </el-select>
       </el-col>
+<!--      <el-col :span="3">-->
+<!--        <el-checkbox v-model="checked" border>内部调用</el-checkbox>-->
+<!--      </el-col>-->
       <el-col :span="3">
-<!--        <label class="radio-label">布局:  </label>-->
         <el-select v-model="G_layout" style="width:120px;" @change="layout_change">
           <el-option
             v-for="item in G_layout_options"
@@ -316,6 +318,9 @@ export default {
         // console.log(res.data)
         if (res.data.length > 0) {
           _t.ver_list = res.data
+          if (_t.config_graph.ver !== '') {
+            _t.plat_list = _t.ver_list[_t.ver_list.findIndex((item) => item.value === _t.config_graph.ver)].platform
+          }
         }
       }).catch(function(error) {
         console.log(error)
@@ -401,6 +406,7 @@ export default {
       _t.config_graph = tmp
       _t.path1 = tmp.sou
       _t.path2 = tmp.tar
+      _t.plat_list = _t.ver_list[_t.ver_list.findIndex((item) => item.value === tmp.ver)].platform
       _t.get_path_list()
     },
     set_by_url(query) {
@@ -414,6 +420,8 @@ export default {
         // _t.get_path_list()
       }
       if (query.ver && query.plat) {
+        // console.log('set,url', _t.ver_list)
+        // _t.plat_list = _t.ver_list[_t.ver_list.findIndex((item) => item.value === _t.config_graph.ver)].platform
         _t.get_path_list()
       }
       if (query.sou) {
