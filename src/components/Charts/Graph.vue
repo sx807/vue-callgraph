@@ -676,7 +676,7 @@ export default {
           platform: _t.graph_config.plat,
           source: _t.graph_config.sou,
           target: _t.graph_config.tar,
-          per: _t.graph_config.per,
+          per: _t.graph_config.per
         },
         data: data
       }, {
