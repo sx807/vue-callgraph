@@ -79,7 +79,7 @@ export default {
           var: '',
           sou: '',
           tar: '',
-          per: 1,
+          per: 1
         }
       }
     },
