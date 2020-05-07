@@ -55,9 +55,9 @@
           />
         </el-select>
       </el-col>
-<!--      <el-col :span="3">-->
-<!--        <el-checkbox v-model="checked" border>内部调用</el-checkbox>-->
-<!--      </el-col>-->
+      <el-col :span="3">
+        <el-checkbox v-model="config_graph.per" border @change="per_change">内部调用</el-checkbox>
+      </el-col>
       <el-col :span="3">
         <el-select v-model="G_layout" style="width:120px;" @change="layout_change">
           <el-option
@@ -149,6 +149,7 @@ export default {
       web_data: {},
       config_graph: {
         ver: '',
+        per: false,
         plat: '',
         sou: '',
         tar: '',
@@ -185,8 +186,8 @@ export default {
     _t.$EventBus.bus.$on('code/show', _t.show_code)
     // console.log(process.env)
     _t.get_ver_list()
-    if (_t.$route.params.hasOwnProperty('pathMatch')) {
-      _t.get_data(this.$route.params.pathMatch)
+    if (_t.$route.params.hasOwnProperty('id')) {
+      _t.get_data(this.$route.params.id)
     }
     if (Object.keys(_t.$route.query).length > 0) {
       _t.set_by_url(_t.$route.query)
@@ -208,12 +209,22 @@ export default {
       const _t = this
       console.log('ver ', val, _t.ver_list.findIndex((item) => item.value === val))
       _t.plat_list = _t.ver_list[_t.ver_list.findIndex((item) => item.value === val)].platform
-      _t.config_graph.plat = _t.plat_list[0].value
+      if (_t.config_graph.plat === '') _t.config_graph.plat = _t.plat_list[0].value
       _t.get_path_list()
+      _t.config_graph.data_source = 'server'
     },
     plat_change() {
       const _t = this
-      _t.setPath({ sou: '', tar: '' })
+      // _t.setPath({ sou: '', tar: '' })
+      _t.get_path_list()
+      _t.config_graph.data_source = 'server'
+    },
+    per_change() {
+      const _t = this
+      // if (_t.per_select) _t.config_graph.per = 0
+      // else _t.config_graph.per = 1
+      _t.config_graph.data_source = 'server'
+      // console.log(_t.config_graph.per)
     },
     layout_change() {
       // const _t = this
@@ -229,10 +240,14 @@ export default {
       if (val.data_source) {
         // console.log('val', val)
         _t.config_graph.data_source = val.data_source
+        _t.config_graph.ver = val.ver
+        _t.config_graph.plat = val.plat
+        _t.config_graph.per = val.per
         _t.path1 = val.sou
         _t.path2 = val.tar
         _t.config_graph.sou = val.sou
         _t.config_graph.tar = val.tar
+        _t.get_path_list()
         return
       }
       if (val.sou) {
@@ -253,6 +268,7 @@ export default {
         plat: _t.config_graph.plat,
         sou: _t.config_graph.sou,
         tar: _t.config_graph.tar,
+        per: _t.config_graph.per,
         data_source: 'server'
       }
       switch (item) {
@@ -400,6 +416,7 @@ export default {
       const tmp = {}
       tmp.ver = row.config.version
       tmp.plat = row.config.platform
+      tmp.per = row.config.per
       tmp.sou = row.config.source
       tmp.tar = row.config.target
       tmp.data_source = 'external'
@@ -417,6 +434,10 @@ export default {
       }
       if (query.plat) {
         _t.config_graph.plat = query.plat
+        // _t.get_path_list()
+      }
+      if (query.per) {
+        _t.config_graph.per = query.per
         // _t.get_path_list()
       }
       if (query.ver && query.plat) {
@@ -450,6 +471,9 @@ export default {
       }
       if (_t.config_graph.plat !== '') {
         conf['plat'] = _t.config_graph.plat
+      }
+      if (_t.config_graph.per !== '') {
+        conf['per'] = _t.config_graph.per
       }
       if (_t.config_graph.sou !== '') {
         conf['sou'] = _t.config_graph.sou

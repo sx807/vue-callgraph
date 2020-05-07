@@ -78,7 +78,8 @@ export default {
         return {
           var: '',
           sou: '',
-          tar: ''
+          tar: '',
+          per: 1,
         }
       }
     },
@@ -97,6 +98,7 @@ export default {
       minimap: null,
       graph_id: '',
       options: {
+        per: 1,
         expanded: ''
       },
       graph_config: {},
@@ -158,11 +160,14 @@ export default {
     config: {
       handler(newValue, oldValue) {
         const _t = this
-        // console.log('graph config change', _t.graph_config)
+        console.log('graph config change', newValue)
         if (newValue.data_source === 'server') {
+          let per = 1
           _t.options.expanded = ''
           _t.backup()
           _t.graph_config = JSON.parse(JSON.stringify(newValue))
+          if (newValue.per) per = 0
+          _t.set_options({ per: per })
           _t.get_data('new')
         }
       },
@@ -177,7 +182,7 @@ export default {
     _t.$EventBus.bus.$on('graph/delete', _t.delete_node)
     _t.$EventBus.bus.$on('graph/expand', _t.expand_node)
     _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
-    _t.$EventBus.bus.$on('graph/options', _t.setOptions)
+    _t.$EventBus.bus.$on('graph/options', _t.set_options)
     _t.$EventBus.bus.$on('graph/back', _t.back_graph)
     _t.$EventBus.bus.$on('graph/post', _t.save_graph)
     // this.$nextTick(function() {
@@ -200,9 +205,12 @@ export default {
     const _t = this
     // console.log('mounted', _t.$refs.graphChart.offsetWidth)
     _t.graph_w = _t.$refs.graphChart.offsetWidth
+    console.log(_t.config.per, _t.graph_config.per)
     _t.graph_config = JSON.parse(JSON.stringify(_t.config))
+    console.log(_t.config.per, _t.graph_config.per)
+    _t.set_options({ per: _t.config.per ? 0 : 1 })
     _t.initChart()
-    // console.log('mounted', _t.config, _t.graph_config)
+    console.log('mounted', _t.config, _t.graph_config)
     // console.log('mounted', _t.$refs.graphChart.offsetHeight, _t.$refs.graphChart.offsetWidth)
     if (_t.config.data_source === 'external') {
       _t.get_data('external')
@@ -372,7 +380,8 @@ export default {
       _t.graph.paint()
       _t.graph.setAutoPaint(true)
     },
-    setOptions(val) {
+    set_options(val) {
+      console.log('set', val)
       const keys = Object.keys(val)
       for (const key of keys) {
         this.options[key] = val[key]
@@ -628,8 +637,11 @@ export default {
         _t.graph.setAutoPaint(true)
         console.log('back_graph', _t.graph_config)
         _t.$EventBus.bus.$emit('graph/path/change', {
+          ver: _t.backup_data.config.ver,
+          plat: _t.backup_data.config.plat,
           sou: _t.backup_data.config.sou,
           tar: _t.backup_data.config.tar,
+          per: _t.backup_data.config.per,
           data_source: 'backup'
         })
       }
@@ -663,7 +675,8 @@ export default {
           version: _t.graph_config.ver,
           platform: _t.graph_config.plat,
           source: _t.graph_config.sou,
-          target: _t.graph_config.tar
+          target: _t.graph_config.tar,
+          per: _t.graph_config.per,
         },
         data: data
       }, {
@@ -698,7 +711,7 @@ export default {
         }
       }
       _t.data.edges = tmp
-      _t.setOptions({
+      _t.set_options({
         id: _t.graph_id,
         expand: nodeId
       })

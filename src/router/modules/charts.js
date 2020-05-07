@@ -16,13 +16,14 @@ const chartsRouter = {
       path: 'graph',
       component: () => import('@/views/charts/graph'),
       name: 'GraphCharts',
-      meta: { title: 'Graph Charts', noCache: true }
+      meta: { title: 'Graph Chart', noCache: true }
     },
     {
-      path: 'graph/*',
+      path: 'graph/:id',
       component: () => import('@/views/charts/graph'),
-      name: 'GraphChart',
-      meta: { title: 'Graph Chart', noCache: true }
+      name: 'ShareCharts',
+      meta: { title: 'Share Chart', noCache: true },
+      hidden: true
     },
     {
       path: 'keyboard',
