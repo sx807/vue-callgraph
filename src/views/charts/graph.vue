@@ -437,7 +437,8 @@ export default {
         // _t.get_path_list()
       }
       if (query.per) {
-        _t.config_graph.per = query.per
+        if (query.per === 'true') _t.config_graph.per = true
+        else _t.config_graph.per = false
         // _t.get_path_list()
       }
       if (query.ver && query.plat) {
