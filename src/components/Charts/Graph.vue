@@ -182,7 +182,7 @@ export default {
     _t.$EventBus.bus.$on('graph/delete', _t.delete_node)
     _t.$EventBus.bus.$on('graph/expand', _t.expand_node)
     _t.$EventBus.bus.$on('graph/layout', _t.updateLayout)
-    _t.$EventBus.bus.$on('graph/options', _t.set_options)
+    // _t.$EventBus.bus.$on('graph/options', _t.set_options)
     _t.$EventBus.bus.$on('graph/back', _t.back_graph)
     _t.$EventBus.bus.$on('graph/post', _t.save_graph)
     // this.$nextTick(function() {
@@ -399,7 +399,7 @@ export default {
       if (_t.options.hasOwnProperty('expand') &&
         _t.options.expand.lastIndexOf('.') > 0 &&
         _t.options.expand.lastIndexOf('.') < _t.options.expand.length - 2) {
-        this.$message.error('错误 函数节点不可展开！')
+        _t.$message.error('错误 函数节点不可展开！')
         const tmp = _t.options.expanded
         _t.options = {
           expanded: tmp
@@ -407,7 +407,7 @@ export default {
         return false
       }
       if (ex_nodes >= 3) {
-        this.$message.error('错误 展开节点达到上限(3)！')
+        _t.$message.error('错误 展开节点达到上限(3)！')
         const tmp = _t.options.expanded
         _t.options = {
           expanded: tmp
@@ -498,7 +498,7 @@ export default {
           loadingInstance.close()
         }).catch(function(error) {
           loadingInstance.close()
-          this.$message.error(error)
+          _t.$message.error(error)
           const tmp = _t.options.expanded
           _t.options = {
             expanded: tmp

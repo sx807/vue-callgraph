@@ -20,6 +20,7 @@
     <el-table-column
       prop="s_file"
       label="所在文件"
+      sortable
     >
       <template slot-scope="scope">
         <el-button type="text" size="small" @click="handleClick(scope.row, 's_file', 0)">
@@ -44,10 +45,12 @@
     <el-table-column
       prop="num"
       label="调用次数"
+      sortable
     />
     <el-table-column
       prop="call_line"
       label="调用行号"
+      sortable
     >
       <template slot-scope="scope">
         <el-button
@@ -55,7 +58,7 @@
           :key="i"
           type="text"
           size="small"
-          @click="handleClick(scope.row, 'call', scope.row.call_line)"
+          @click="handleClick(scope.row, 'call', item)"
         >
           {{ item }}
         </el-button>
@@ -64,10 +67,12 @@
     <el-table-column
       prop="t_fun"
       label="被调函数"
+      sortable
     />
     <el-table-column
       prop="t_file"
       label="所在文件"
+      sortable
     >
       <template slot-scope="scope">
         <el-button

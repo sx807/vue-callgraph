@@ -182,6 +182,7 @@ export default {
     const _t = this
     _t.$EventBus.bus.$on('graph/sel/to_url', _t.set_g_sel)
     _t.$EventBus.bus.$on('graph/path/change', _t.setPath)
+    _t.$EventBus.bus.$on('graph/options', _t.set_per)
     _t.$EventBus.bus.$on('funlist/show', _t.funlist_conf)
     _t.$EventBus.bus.$on('code/show', _t.show_code)
     // console.log(process.env)
@@ -225,6 +226,11 @@ export default {
       // else _t.config_graph.per = 1
       _t.config_graph.data_source = 'server'
       // console.log(_t.config_graph.per)
+    },
+    set_per(val) {
+      const _t = this
+      _t.config_graph.data_source = 'null'
+      _t.config_graph.per = val.per
     },
     layout_change() {
       // const _t = this
@@ -313,7 +319,10 @@ export default {
       let url = 'https://elixir.bootlin.com/linux/v' + ver.label
       const point = path.indexOf('.')
       if (point > 0 && point < path.length - 3) {
-        url += '/ident' + path.slice(path.lastIndexOf('/'))
+        // console.log(path.slice(0, path.lastIndexOf('/')), path.slice(path.lastIndexOf('/')))
+        url += '/source'
+        _t.show_fun_code(url, path)
+        return
       } else if (line > 0) {
         url += '/source' + path + '#L' + line.toString()
       } else {
@@ -321,6 +330,33 @@ export default {
       }
       // console.log(url)
       window.open(url)
+    },
+
+    show_fun_code(code_url, path) {
+      const _t = this
+      // axios.defaults.withCredentials = true
+      const url = _t.url + '/functions' + path.slice(path.lastIndexOf('/'))
+      axios.get(url, { // 还可以直接把参数拼接在url后边
+        params: {
+          version: _t.config_graph.ver,
+          platform: _t.config_graph.plat,
+          file: path.slice(1, path.lastIndexOf('/'))
+        },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+        }
+      }).then(function(res) {
+        // console.log(res.data)
+        if (Object.keys(res.data).length > 0) {
+          // _t.web_data = res.data
+          // console.log('function', res.data)
+          // _t.set_web_data(res.data)
+          code_url += path.slice(0, path.lastIndexOf('/')) + '#L' + res.data.f_dline.toString()
+          window.open(code_url)
+        }
+      }).catch(function(error) {
+        console.log(error)
+      })
     },
 
     get_ver_list() {
