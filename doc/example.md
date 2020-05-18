@@ -83,4 +83,38 @@ sudo 内部调用了 setresuid 来提升权限（虽然还调用了其他设置�
 
 结合源码行号查看，可以辅助研究者分析模块间调用关系，快速确定源码中函数所在位置及模块间调用关系。
 
+通过内核分析平台，研究人员可以快速查看函数调用关系，传统源码分析平台，对于调用的函数无法提供详细信息，遇到重名函数，查看过程是对索引进行筛选，罗列出该函数名的定义和调用，用户需要自行选择当前文件中对应的函数位置，进行查看。
+
+函数调用图模块的链接源码功能，源数据为一对一的函数对应关系，数据中包含函数的文件和所在行等信息，用户可以在右键菜单中选择查看对应源码，平台会跳转到当前显示节点的源码位置，用户无须分辨重名函数，如启动函数 start_kernel 中，会使用 console_init() 对控制台进行初始化，而在源码中存在多个 console_init() 的函数定义，如图：
+
+![console初始化函数](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200518133441.png)
+
+用户可以通过调用图查看模块间调用表，调用表中会显示被调用函数具体位置，点击被调用函数行号跳转源码。同时根据用户分析需要，切换调用图路径或展开节点，查看详细路径内函数调用关系图。
+
+![调用表](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200518134035.png)
+
+查看 start_kernel 函数与 kernel/printk/printk.c 中函数的详细调用关系图：
+
+![调用图](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200518144350.png)
+
 平台提供了，调用图到源码、调用图到调用列表、调用列表到源码的跳转关系，使用者从整体模块间调用开始，查看模块间调用函数，到查看调用行代码，逐步细化分析内容。
+
+### 优化启动函数
+
+linux系统良好的移植性和多平台兼容性，使其通过减少内核功能模块，能够运行在资源较少的嵌入式设备上。
+
+裁剪内核可以通过内核的编译选项进行模块和功能的删减，通过对文件内函数的删减和替换能够进一步减小内核所占空间。
+
+如对于大部分嵌入式设备，大多不需要多路cpu相关代码部分，内核中与smp相关函数是负责协调多cpu部分代码，使用分析平台，研究人员可以通过绘制smp函数作为被调用函数的调用图：
+
+![smp作为目标路径](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200518170150.png)
+
+通过过滤调用图，可以看到，初始化模块会调用如下smp文件中函数：
+
+![smp调用](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200518170815.png)
+
+结合函数调用表模块，可以查看初始化模块 main.c 中 kernel_init_freeable() 函数调用 SMP 初始化函数：
+
+![调用表](https://raw.githubusercontent.com/sx807/img-url-personal/master/img_20200518171018.png)
+
+确定了相关函数的调用位置，研究人员裁剪内核相应调用时，能够快捷定位函数位置，并通过调用图快速了解分析函数能否删除。
