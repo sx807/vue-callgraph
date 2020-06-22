@@ -160,7 +160,7 @@ export default {
     config: {
       handler(newValue, oldValue) {
         const _t = this
-        console.log('graph config change', newValue)
+        // console.log('graph config change', newValue)
         if (newValue.data_source === 'server') {
           let per = 1
           _t.options.expanded = ''
@@ -205,12 +205,12 @@ export default {
     const _t = this
     // console.log('mounted', _t.$refs.graphChart.offsetWidth)
     _t.graph_w = _t.$refs.graphChart.offsetWidth
-    console.log(_t.config.per, _t.graph_config.per)
+    // console.log(_t.config.per, _t.graph_config.per)
     _t.graph_config = JSON.parse(JSON.stringify(_t.config))
-    console.log(_t.config.per, _t.graph_config.per)
+    // console.log(_t.config.per, _t.graph_config.per)
     _t.set_options({ per: _t.config.per ? 0 : 1 })
     _t.initChart()
-    console.log('mounted', _t.config, _t.graph_config)
+    // console.log('mounted', _t.config, _t.graph_config)
     // console.log('mounted', _t.$refs.graphChart.offsetHeight, _t.$refs.graphChart.offsetWidth)
     if (_t.config.data_source === 'external') {
       _t.get_data('external')
@@ -352,7 +352,7 @@ export default {
       _t.graph.on('edge:mouseleave', _t.clearAllStats)
       // _t.graph.on('canvas:click', _t.clearAllStats)
       _t.graph.on('node:contextmenu', evt => {
-        console.log(evt.item.getBBox())
+        // console.log(evt.item.getBBox())
         this.$EventBus.bus.$emit('graph/contextmenu/open', evt)
       })
       _t.graph.on('edge:contextmenu', evt => {
@@ -381,7 +381,7 @@ export default {
       _t.graph.setAutoPaint(true)
     },
     set_options(val) {
-      console.log('set', val)
+      // console.log('set', val)
       const keys = Object.keys(val)
       for (const key of keys) {
         this.options[key] = val[key]
@@ -419,7 +419,7 @@ export default {
     get_data(type) {
       const _t = this
       if (!_t.check_status()) return
-      console.log('get_data', _t.graph_config)
+      // console.log('get_data', _t.graph_config)
       const loadingInstance = Loading.service({ target: '#graphChart' })
       const config = {
         version: _t.graph_config.ver,
@@ -465,6 +465,7 @@ export default {
         }).then(function(res) {
           // console.log(res.data)
           // console.log('get', Cookies.get('csrfToken'))
+          const time_start = new Date().getTime()
           if (res.data.nodes.length > 0) {
             _t.graph_id = res.data.id
             const tmp = _t.handle_data(res.data)
@@ -496,6 +497,8 @@ export default {
             _t.select_edge()
           }
           loadingInstance.close()
+          const time_end = new Date().getTime()
+          console.log(_t.graph_id, time_end - time_start)
         }).catch(function(error) {
           loadingInstance.close()
           _t.$message.error(error)
@@ -608,7 +611,7 @@ export default {
         tmp.type = edge.type
         _t.backup_data.data.edges.push(tmp)
       }
-      console.log(_t.backup_data)
+      // console.log(_t.backup_data)
     },
     back_graph(item) {
       const _t = this
@@ -635,7 +638,7 @@ export default {
         _t.graph.paint()
         _t.graph.fitView()
         _t.graph.setAutoPaint(true)
-        console.log('back_graph', _t.graph_config)
+        // console.log('back_graph', _t.graph_config)
         _t.$EventBus.bus.$emit('graph/path/change', {
           ver: _t.backup_data.config.ver,
           plat: _t.backup_data.config.plat,
