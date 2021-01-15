@@ -499,6 +499,7 @@ export default {
           loadingInstance.close()
           const time_end = new Date().getTime()
           console.log(_t.graph_id, time_end - time_start)
+          setTimeout(_t.auto_test(), 2000)
         }).catch(function(error) {
           loadingInstance.close()
           _t.$message.error(error)
@@ -509,6 +510,22 @@ export default {
           console.log(error)
         })
       }
+    },
+    auto_test() {
+      const _t = this
+      const list = ['/mm', '/fs', '/ipc', '/lib', '/block', '/init', '/net', '/kernel', '/crypto', '/sound', '/drivers', '/arch', '/include', '/security', '/certs']
+      let i = list.indexOf(_t.graph_config.sou)
+      let j = list.indexOf(_t.graph_config.tar)
+      if (i < 0 || i >= list.length - 1) {
+        i = 0
+        j = 1
+      } else if (j < 0 || j >= list.length - 1) {
+        i = i + 1
+        j = i + 1
+      } else j += 1
+      _t.graph_config.sou = list[i]
+      _t.graph_config.tar = list[j]
+      _t.get_data('new')
     },
     handle_data(data) {
       data.nodes.map(function(node) {

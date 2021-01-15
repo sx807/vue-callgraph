@@ -24,6 +24,7 @@
       <el-col :span="5">
         <el-select
           v-model="path1"
+          disabled
           filterable
           remote
           reserve-keyword
@@ -41,6 +42,7 @@
       <el-col :span="5">
         <el-select
           v-model="path2"
+          disabled
           filterable
           remote
           reserve-keyword
@@ -151,8 +153,8 @@ export default {
         ver: '',
         per: false,
         plat: '',
-        sou: '',
-        tar: '',
+        sou: '/',
+        tar: '/',
         data_source: 'server'
       },
       size_graph: {

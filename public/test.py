@@ -56,16 +56,16 @@ def get_json(path1,path2,url,data,file):
     file.write(s)
     return
 
-n = 1
+n = 2
 
 for i in range(0, n):
     # 跑n次get全部路径的记录
     for i in range(0, 15):
-        get_svg(list[i],'',url_svg,file)
+        # get_svg(list[i],'',url_svg,file)
         get_json(list[i],'',url_api,data,file2)
         # get 单路径 mm
         for j in range( i+1 , 15):
-            get_svg(list[i],list[j],url_svg,file)
+            # get_svg(list[i],list[j],url_svg,file)
             get_json(list[i],list[j],url_api,data,file2)
             # get 双路径 mm-fs
 
