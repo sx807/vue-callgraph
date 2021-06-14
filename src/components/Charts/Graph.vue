@@ -509,7 +509,7 @@ export default {
     },
     handle_data(data) {
       data.nodes.map(function(node) {
-        node.label = node.id
+        node.label = node.id.slice(node.id.lastIndexOf('/'))
         if (!node.style) {
           node.style = {}
         }
